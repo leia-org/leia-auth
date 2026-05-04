@@ -1,11 +1,12 @@
 import express from 'express';
 import cors from 'cors';
-import mongoose from 'mongoose';
-import logger from './utils/logger.js'; // Asumo que tienes un logger con winston
+import logger from './utils/logger.js';
+import connectDB from './config/db.js';
 import errorHandler from './middlewares/errorHandler.js';
 import requestLogger from './middlewares/requestLogger.js';
-import userRoutesV1 from './routes/userRoutes.js';
-import systemApiKeyRoutesV1 from './routes/systemApiKeyRoutes.js'; // Descomentar si lo migras
+import userRoutesV1 from './routes/v1/userRoutes.js';
+import apiKeyRoutesV1 from './routes/v1/apiKeyRoutes.js';
+
 
 const app = express();
 
@@ -21,31 +22,31 @@ app.use(requestLogger);
 
 // Rutas principales del microservicio de Auth
 app.use('/api/v1/users', userRoutesV1);
-app.use('/api/v1/system-api-keys', systemApiKeyRoutesV1);
+app.use('/api/v1/apikeys', apiKeyRoutesV1);
 
-// Middleware de manejo de errores (siempre al final)
+// Error handling middleware
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 3001; // Usamos el 3001 para que no choque con el backend viejo
+const PORT = process.env.PORT || 3001;
 
 const startServer = async () => {
   try {
-    // Conexión a la BD (Asegúrate de tener MONGO_URI en tu .env)
-    await mongoose.connect(process.env.MONGO_URI);
-    logger.info('Connected to MongoDB (Auth Service)');
-
+    await connectDB();
     const server = app.listen(PORT, () => {
-      logger.info(`Auth Service running on port ${PORT}`);
+      logger.info(`Server running on port ${PORT}`);
     });
 
     const gracefulShutdown = () => {
-      logger.info('Shutting down Auth Service...');
+      logger.info('Shutting down server...');
       server.close(() => {
-        mongoose.connection.close(false, () => {
-          logger.info('MongoDb connection closed.');
-          process.exit(0);
-        });
+        logger.info('Server has been shut down');
+        process.exit(0);
       });
+
+      setTimeout(() => {
+        logger.error('Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+      }, 10000);
     };
 
     process.on('SIGTERM', gracefulShutdown);
@@ -57,3 +58,5 @@ const startServer = async () => {
 };
 
 startServer();
+
+export default app;
