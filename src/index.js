@@ -4,6 +4,7 @@ import logger from './utils/logger.js';
 import connectDB from './config/db.js';
 import errorHandler from './middlewares/errorHandler.js';
 import requestLogger from './middlewares/requestLogger.js';
+import { auth } from './middlewares/auth.js';
 import userRoutesV1 from './routes/v1/userRoutes.js';
 import apiKeyRoutesV1 from './routes/v1/apiKeyRoutes.js';
 
@@ -12,13 +13,14 @@ const app = express();
 
 app.use(
   cors({
-    origin: [process.env.FRONTEND_URL, process.env.WORKBENCH_FRONTEND_URL],
+    origin: [process.env.DESIGNER_FRONTEND_URL, process.env.WORKBENCH_FRONTEND_URL],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   })
 );
 app.use(express.json());
 app.use(requestLogger);
+app.use(auth);
 
 // Rutas principales del microservicio de Auth
 app.use('/api/v1/users', userRoutesV1);
@@ -27,7 +29,7 @@ app.use('/api/v1/apikeys', apiKeyRoutesV1);
 // Error handling middleware
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3005;
 
 const startServer = async () => {
   try {

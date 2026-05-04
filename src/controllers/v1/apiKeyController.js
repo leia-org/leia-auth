@@ -1,5 +1,5 @@
 import ApiKeyService from '../../services/v1/ApiKeyService.js';
-import ProviderService from '../../services/v1/services/ProviderService.js';
+import ProviderService from '../../services/v1/ProviderService.js';
 import { createApiKeyValidator, updateApiKeyValidator } from '../../validators/v1/apiKeyValidator.js';
 
 // USER API KEYS

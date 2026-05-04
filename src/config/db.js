@@ -16,6 +16,7 @@ const connectDB = async () => {
         email: process.env.DEFAULT_ADMIN_EMAIL,
         password: process.env.DEFAULT_ADMIN_PASSWORD,
         role: 'admin',
+        useSystemApiKey: true,
       });
       await newAdmin.save();
       logger.info('Admin user created');

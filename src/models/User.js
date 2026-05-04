@@ -37,7 +37,7 @@ const UserSchema = new Schema(
           type: String,
           required: true,
         },
-        provider: { // provider que serua el enum que dijo rada
+        provider: {
           type: String,
           required: true,
         },
