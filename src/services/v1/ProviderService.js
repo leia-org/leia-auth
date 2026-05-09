@@ -7,8 +7,10 @@ class ProviderService {
             return await this.verifyOpenAIApiKey(keyValue);
         case 'gemini':
             return await this.verifyGeminiApiKey(keyValue);
+        case 'ollama':
+            return true;
         default:
-            return false;
+            throw new Error('Unsupported provider. Please choose a valid provider.');
         }
     }
     async verifyOpenAIApiKey(keyValue) {

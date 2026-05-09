@@ -43,7 +43,9 @@ const UserSchema = new Schema(
         },
         baseUrl: {
           type: String,
-          required: true,
+          required: function() {
+            return this.provider === 'ollama';
+          }
         },
         keyValue: {
           type: String,

@@ -50,10 +50,31 @@ export const updateApiKey = async (req, res, next) => {
     const userId = req.auth?.payload?.id;
     const apiKeyId = req.params.apiKeyId;
     const value = await updateApiKeyValidator.validateAsync(req.body, { abortEarly: true });
-    if (value.keyValue && value.keyValue !== '') {
-        await ProviderService.verifyApiKeyIntegrity(value.provider, value.keyValue);
+
+    const originalKey = await ApiKeyService.getUserApiKeyById(userId, apiKeyId);
+    if(!originalKey) {
+      const error = new Error('API Key not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const isProviderChanged = value.provider && value.provider !== originalKey.provider;
+    const isNewKeyProvided = value.keyValue && value.keyValue !== '';
+    if (isProviderChanged && !isNewKeyProvided) {
+      const err = new Error('Si cambias el provider, es obligatorio introducir una nueva API Key.');
+      err.isJoi = true;
+      err.details = [{ path: ['keyValue'], message: err.message }];
+      throw err;
+    }
+
+    if (isNewKeyProvided) {
+      const providerToVerify = value.provider || originalKey.provider;
+      await ProviderService.verifyApiKeyIntegrity(providerToVerify, value.keyValue);
     } else {
-        delete value.keyValue;
+      delete value.keyValue;
+    }
+    if(!isProviderChanged) {
+      delete value.provider;
     }
     const updatedKey = await ApiKeyService.updateUserApiKey(userId, apiKeyId, value);
     await ApiKeyService.sendRevocationRequestToRunner(updatedKey._id);
