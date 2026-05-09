@@ -97,7 +97,7 @@ export const getApiKeyById = async (req, res, next) => {
     next(err);
   }
 }
-
+// INTERNAL ENDPOINTS
 export const getApiKeyValueForLeiaRunner = async (req, res, next) => {
   try {
     const { provider, apiKeyId, apiKeyRequesterId } = req.body;
@@ -114,6 +114,26 @@ export const getApiKeyValueForLeiaRunner = async (req, res, next) => {
     }
 
     res.json({ keyValue: apiKey.keyValue });
+  } catch (err) {
+    next(err);
+  }
+}
+export const isCompatibleApiKeyProviderForLeiaRunner = async (req, res, next) => {
+  try {
+    const { provider, apiKeyId, apiKeyRequesterId } = req.body;
+    const apiKey = await ApiKeyService.getUserApiKeyById(apiKeyRequesterId, apiKeyId);
+    if (!apiKey) {
+      const error = new Error('API Key not found');
+      error.statusCode = 404;
+      throw error;
+    }
+    if (apiKey.provider !== provider) {
+      const error = new Error('API Key provider mismatch');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    res.json({ isCompatible: true });
   } catch (err) {
     next(err);
   }

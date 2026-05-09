@@ -7,6 +7,7 @@ import {
   getApiKeyById,
   manageDefaultKey,
   getApiKeyValueForLeiaRunner,
+  isCompatibleApiKeyProviderForLeiaRunner,
   createSystemApiKey,
   updateSystemApiKey,
   deleteSystemApiKey
@@ -18,7 +19,7 @@ const router = express.Router();
 
 // RUTAS INTERNAS (Comunicación entre microservicios)
 router.post('/get-value', requireInternToken, getApiKeyValueForLeiaRunner);
-
+router.post('/validate-provider', requireInternToken, isCompatibleApiKeyProviderForLeiaRunner);
 // RUTAS DE SYSTEM API KEYS (Solo Admin)
 router.post('/system', requireAdmin, createSystemApiKey);
 router.put('/system/:id', requireAdmin, updateSystemApiKey);
