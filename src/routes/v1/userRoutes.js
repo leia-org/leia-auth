@@ -11,7 +11,7 @@ import {
   changePassword,
 } from '../../controllers/v1/userController.js';
 
-import { requireAdmin, requireJwtAuthentication } from '../../middlewares/auth.js';
+import { requireAdmin, requireInternToken, requireJwtAuthentication } from '../../middlewares/auth.js';
 const router = express.Router();
 
 // POST
@@ -20,6 +20,7 @@ router.post('/', requireAdmin, createUser);
 // GET
 router.get('/', requireAdmin, getUsers);
 router.get('/email/:email', requireAdmin, getUserByEmail);
+router.get('/intern/:id', requireInternToken, getUserById);
 router.get('/:id', requireAdmin, getUserById);
 // PUT
 router.put('/profile/update', requireJwtAuthentication, updateProfile);

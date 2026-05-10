@@ -6,7 +6,7 @@ import {
   updateApiKey,
   getApiKeyById,
   manageDefaultKey,
-  getApiKeyValueForLeiaRunner,
+  getApiKeyDataForLeiaRunner,
   isCompatibleApiKeyProviderForLeiaRunner,
   createSystemApiKey,
   updateSystemApiKey,
@@ -18,7 +18,7 @@ import { requireAdmin, requireAdvanced, requireInternToken } from '../../middlew
 const router = express.Router();
 
 // RUTAS INTERNAS (Comunicación entre microservicios)
-router.post('/get-value', requireInternToken, getApiKeyValueForLeiaRunner);
+router.post('/get-value', requireInternToken, getApiKeyDataForLeiaRunner);
 router.post('/validate-provider', requireInternToken, isCompatibleApiKeyProviderForLeiaRunner);
 // RUTAS DE SYSTEM API KEYS (Solo Admin)
 router.post('/system', requireAdmin, createSystemApiKey);

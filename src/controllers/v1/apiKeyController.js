@@ -119,7 +119,7 @@ export const getApiKeyById = async (req, res, next) => {
   }
 }
 // INTERNAL ENDPOINTS
-export const getApiKeyValueForLeiaRunner = async (req, res, next) => {
+export const getApiKeyDataForLeiaRunner = async (req, res, next) => {
   try {
     const { provider, apiKeyId, apiKeyRequesterId } = req.body;
     const apiKey = await ApiKeyService.getUserApiKeyById(apiKeyRequesterId, apiKeyId, false);
@@ -133,8 +133,11 @@ export const getApiKeyValueForLeiaRunner = async (req, res, next) => {
       error.statusCode = 400;
       throw error;
     }
-
-    res.json({ keyValue: apiKey.keyValue });
+    if (apiKey.baseUrl) {
+      res.json({ keyValue: apiKey.keyValue, baseUrl: apiKey.baseUrl });
+    } else {
+      res.json({ keyValue: apiKey.keyValue });
+    }
   } catch (err) {
     next(err);
   }
