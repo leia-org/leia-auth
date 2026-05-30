@@ -1,5 +1,10 @@
 import UserService from '../../services/v1/UserService.js';
-import { credentialsValidator, registrationValidator, createUserValidator } from '../../validators/v1/userValidator.js';
+import {
+  credentialsValidator,
+  registrationValidator,
+  createUserValidator,
+  updateUserValidator,
+} from '../../validators/v1/userValidator.js';
 import { generateToken } from '../../utils/jwt.js';
 
 
