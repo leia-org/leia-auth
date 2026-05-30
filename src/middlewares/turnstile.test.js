@@ -23,6 +23,19 @@ describe('requireValidTurnstileToken', () => {
     vi.unstubAllEnvs();
   });
 
+  it('continues without validating when Turnstile is disabled', async () => {
+    vi.stubEnv('TURNSTILE_ENABLED', 'false');
+    const req = { body: { 'cf-turnstile-response': 'ignored-token', email: 'test@example.com' } };
+    const res = createResponse();
+    const next = vi.fn();
+
+    await requireValidTurnstileToken(req, res, next);
+
+    expect(axios.post).not.toHaveBeenCalled();
+    expect(req.body).toEqual({ email: 'test@example.com' });
+    expect(next).toHaveBeenCalledOnce();
+  });
+
   it('rejects requests without a token', async () => {
     const req = { body: {}, headers: {} };
     const res = createResponse();

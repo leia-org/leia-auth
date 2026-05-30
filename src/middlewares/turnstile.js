@@ -2,6 +2,7 @@ import axios from 'axios';
 import logger from '../utils/logger.js';
 
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+const isTurnstileEnabled = () => process.env.TURNSTILE_ENABLED?.toLowerCase() !== 'false';
 
 const getRemoteIp = (req) => {
   const forwardedFor = req.headers['x-forwarded-for'];
@@ -14,6 +15,11 @@ const getRemoteIp = (req) => {
 };
 
 export const requireValidTurnstileToken = async (req, res, next) => {
+  if (!isTurnstileEnabled()) {
+    delete req.body?.['cf-turnstile-response'];
+    return next();
+  }
+
   const token = req.body?.['cf-turnstile-response'];
 
   if (!token || typeof token !== 'string' || token.length > 2048) {
