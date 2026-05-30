@@ -72,6 +72,16 @@ export function requireAdvanced(req, res, next) {
   return next();
 }
 
+export function requireUserApiKeyManagement(req, res, next) {
+  const allowedRoles = ['instructor', 'advanced', 'admin'];
+  if (!allowedRoles.includes(req.auth?.payload?.role)) {
+    const error = new Error('Unauthorized: User API key management access required');
+    error.statusCode = 403;
+    return next(error);
+  }
+  return next();
+}
+
 // This middleware is used to check if the user or service is authenticated
 export function requireAuthentication(req, res, next) {
   if (!req.auth) {
