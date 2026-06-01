@@ -13,7 +13,7 @@ import {
   deleteSystemApiKey
 } from '../../controllers/v1/apiKeyController.js';
 
-import { requireAdmin, requireAdvanced, requireInternToken } from '../../middlewares/auth.js';
+import { requireAdmin, requireInternToken, requireUserApiKeyManagement } from '../../middlewares/auth.js';
 
 const router = express.Router();
 
@@ -26,20 +26,20 @@ router.put('/system/:id', requireAdmin, updateSystemApiKey);
 router.delete('/system/:id', requireAdmin, deleteSystemApiKey);
 
 
-// RUTAS DE USER API KEYS (Advanced / Admin)
+// RUTAS DE USER API KEYS (Instructor / Advanced / Admin)
 
 // POST
-router.post('/', requireAdvanced, createApiKey);
+router.post('/', requireUserApiKeyManagement, createApiKey);
 
 // GET
-router.get('/', requireAdvanced, getApiKeys);
-router.get('/:apiKeyId', requireAdvanced, getApiKeyById);
+router.get('/', requireUserApiKeyManagement, getApiKeys);
+router.get('/:apiKeyId', requireUserApiKeyManagement, getApiKeyById);
 
 // PUT
-router.put('/manage-default/:apiKeyId', requireAdvanced, manageDefaultKey);
-router.put('/:apiKeyId', requireAdvanced, updateApiKey);
+router.put('/manage-default/:apiKeyId', requireUserApiKeyManagement, manageDefaultKey);
+router.put('/:apiKeyId', requireUserApiKeyManagement, updateApiKey);
 
 // DELETE
-router.delete('/:apiKeyId', requireAdvanced, deleteApiKey);
+router.delete('/:apiKeyId', requireUserApiKeyManagement, deleteApiKey);
 
 export default router;

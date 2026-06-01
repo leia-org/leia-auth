@@ -1,16 +1,39 @@
 import UserService from '../../services/v1/UserService.js';
-import { createUserValidator, updateUserValidator, loginUserValidator } from '../../validators/v1/userValidator.js';
+import {
+  credentialsValidator,
+  registrationValidator,
+  createUserValidator,
+  updateUserValidator,
+} from '../../validators/v1/userValidator.js';
 import { generateToken } from '../../utils/jwt.js';
 
 
 // No authentication required
 export const login = async (req, res, next) => {
   try {
-    const value = await loginUserValidator.validateAsync(req.body, { abortEarly: false });
+    const value = await credentialsValidator.validateAsync(req.body, { abortEarly: false });
 
     const user = await UserService.login(value.email, value.password);
     const token = generateToken(user.toJSON());
     res.json({ token });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const register = async (req, res, next) => {
+  try {
+    const value = await registrationValidator.validateAsync(req.body, { abortEarly: false });
+
+    const instructorToBeCreated = {
+      email: value.email,
+      password: value.password,
+      role: 'instructor',
+      useSystemApiKey: false,
+    };
+
+    const savedUser = await UserService.create(instructorToBeCreated);
+    res.status(201).json(savedUser);
   } catch (err) {
     next(err);
   }
