@@ -52,6 +52,8 @@ export const createApiKeyValidator = Joi.object({
   }),
   keyValue: keyValueSchema.required(),
   managementUrl: Joi.string().uri().allow(null, '').optional(),
+  // Default model to use with this key (one-time choice; consumers preselect it).
+  model: Joi.string().allow(null, '').optional(),
   isActive: Joi.boolean().required(),
   isDefault: Joi.boolean().required(),
 });
@@ -66,6 +68,7 @@ export const updateApiKeyValidator = Joi.object({
   }),
   keyValue: keyValueSchema.optional().allow(null, ''),
   managementUrl: Joi.string().uri().allow(null, '').optional(),
+  model: Joi.string().allow(null, '').optional(),
   isActive: Joi.boolean().optional(),
 })
 .min(1)
