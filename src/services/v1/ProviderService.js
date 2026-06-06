@@ -23,7 +23,7 @@ class ProviderService {
             return true;
         } catch (error) {
             if (error.response && error.response.status === 401) {
-                throw new Error('Invalid API Key for OpenAI.');
+                throw new Error('OpenAI has rejected the API key. Please verify that the key is correct and has the necessary permissions.');
             }
             throw new Error('OpenAI service is not available. Please try again later.');
         }
@@ -35,7 +35,7 @@ class ProviderService {
             return true;
         } catch (error) {
             if (error.response && error.response.status === 400) {
-                throw new Error('Invalid API Key for Gemini.');
+                throw new Error('Gemini has rejected the API key. Please verify that the key is correct and has the necessary permissions.');
             }
             throw new Error('Gemini service is not available. Please try again later.');
         }

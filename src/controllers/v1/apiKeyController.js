@@ -2,6 +2,19 @@ import ApiKeyService from '../../services/v1/ApiKeyService.js';
 import ProviderService from '../../services/v1/ProviderService.js';
 import { createApiKeyValidator, updateApiKeyValidator } from '../../validators/v1/apiKeyValidator.js';
 
+// Asocia los errores de verificación al campo del formulario correspondiente, de modo que el
+// cliente los muestre junto a dicho campo y no como un error genérico.
+const mapVerificationErrorToField = (err) => {
+  const message = err.message || '';
+  if (message.includes('Unsupported provider')) {
+    err.isJoi = true;
+    err.details = [{ path: ['provider'], message }];
+  } else if (message.includes('has rejected the API key') || message.includes('service is not available')) {
+    err.isJoi = true;
+    err.details = [{ path: ['keyValue'], message }];
+  }
+};
+
 // USER API KEYS
 
 export const createApiKey = async (req, res, next) => {
@@ -12,13 +25,7 @@ export const createApiKey = async (req, res, next) => {
     const savedApiKey = await ApiKeyService.createUserApiKey(userId, value);
     res.status(201).json(savedApiKey);
   } catch (err) {
-    if (err.message.startsWith('Invalid API Key') || err.message.includes('service is not available')) {
-      err.isJoi = true;
-      err.details = [{
-        path: ['keyValue'],
-        message: err.message,
-      }];
-    }
+    mapVerificationErrorToField(err);
     next(err);
   }
 }
@@ -80,13 +87,7 @@ export const updateApiKey = async (req, res, next) => {
     await ApiKeyService.sendRevocationRequestToRunner(updatedKey._id);
     res.json(updatedKey);
   } catch (err) {
-    if (err.message.startsWith('Invalid API Key') || err.message.includes('service is not available')) {
-        err.isJoi = true;
-        err.details = [{
-          path: ['keyValue'],
-          message: err.message,
-        }];
-      }
+    mapVerificationErrorToField(err);
     next(err);
   }
 }
@@ -173,13 +174,7 @@ export const createSystemApiKey = async (req, res, next) => {
     const savedApiKey = await ApiKeyService.createSystemApiKey(userId, value);
     res.status(201).json(savedApiKey);
   } catch (err) {
-    if (err.message.startsWith('Invalid API Key') || err.message.includes('service is not available')) {
-        err.isJoi = true;
-        err.details = [{
-          path: ['keyValue'],
-          message: err.message,
-        }];
-      }
+    mapVerificationErrorToField(err);
     next(err);
   }
 };
@@ -197,13 +192,7 @@ export const updateSystemApiKey = async (req, res, next) => {
     await ApiKeyService.sendRevocationRequestToRunner(updatedKey._id);
     res.json(updatedKey);
   } catch (err) {
-    if (err.message.startsWith('Invalid API Key') || err.message.includes('service is not available')) {
-        err.isJoi = true;
-        err.details = [{
-          path: ['keyValue'],
-          message: err.message,
-        }];
-      }
+    mapVerificationErrorToField(err);
     next(err);
   }
 };
