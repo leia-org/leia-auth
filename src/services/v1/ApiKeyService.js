@@ -4,6 +4,38 @@ import { encrypt, decryptApiKeyValue, maskApiKeyValue } from '../../utils/crypto
 import axios from 'axios';
 
 class ApiKeyService {
+  getDocumentId(document) {
+    return document?._id || document?.id || null;
+  }
+
+  getIdString(value) {
+    return value && typeof value.toString === 'function' ? value.toString() : value;
+  }
+
+  async ensureUserSystemApiKeyDefault(user) {
+    if (!user) return user;
+
+    const currentDefaultId = this.getIdString(user.defaultSystemApiKeyId);
+    if (user.useSystemApiKey === true && currentDefaultId) {
+      return user;
+    }
+
+    const defaultSystemKey = await ApiKeyRepository.findDefaultSystemKey();
+    const defaultSystemKeyId = defaultSystemKey?._id || null;
+    const userId = this.getDocumentId(user);
+
+    if (userId) {
+      const updatedUser = await ApiKeyRepository.enableSystemApiKey(userId, defaultSystemKeyId);
+      if (updatedUser) return updatedUser;
+    }
+
+    user.useSystemApiKey = true;
+    if (defaultSystemKeyId) {
+      user.isSystemApiKeyDefault = true;
+      user.defaultSystemApiKeyId = defaultSystemKeyId;
+    }
+    return user;
+  }
 
   // MÉTODOS DE SYSTEM API KEYS
 
@@ -23,11 +55,13 @@ class ApiKeyService {
     return maskValue ? maskApiKeyValue(decrypted) : decrypted;
   }
 
-  async createSystemApiKey(userId, data) {
+  async createSystemApiKey(_userId, data) {
+    const existingDefaultSystemKey = await ApiKeyRepository.findDefaultSystemKey();
     const newKey = await ApiKeyRepository.createSystemKey(data);
     const decrypted = decryptApiKeyValue(newKey.toObject({ virtuals: true }));
-    if (data.isDefault) {
-      await ApiKeyRepository.setSystemApiKeyDefault(userId, newKey._id);
+    const shouldSetAsDefaultForUsers = data.isActive !== false && (data.isDefault || !existingDefaultSystemKey);
+    if (shouldSetAsDefaultForUsers) {
+      await ApiKeyRepository.setSystemApiKeyDefaultForAllUsers(newKey._id);
     }
     return maskApiKeyValue(decrypted);
   }
@@ -119,12 +153,13 @@ class ApiKeyService {
       throw error;
     }
 
-    const user = await UserRepository.findById(userId);
+    let user = await UserRepository.findById(userId);
     if (!user) {
       const error = new Error('User not found');
       error.statusCode = 404;
       throw error;
     }
+    user = await this.ensureUserSystemApiKeyDefault(user);
     const apiKeys = user.apiKeys.map(apiKey => {
       const decrypted = decryptApiKeyValue(apiKey.toObject({virtuals: true}));
       return maskApiKeyValue(decrypted);
@@ -133,7 +168,7 @@ class ApiKeyService {
     if (user.useSystemApiKey) {
       const systemKeysDocs = await this.getAllSystemApiKeys();
       const systemApiKeys = systemKeysDocs.map(sysKey => {
-        sysKey.isDefault = user.defaultSystemApiKeyId && user.defaultSystemApiKeyId.toString() === sysKey._id.toString();
+        sysKey.isDefault = this.getIdString(user.defaultSystemApiKeyId) === this.getIdString(sysKey._id);
         return sysKey;
       });
 
@@ -149,12 +184,13 @@ class ApiKeyService {
       error.statusCode = 401;
       throw error;
     }
-    const user = await UserRepository.findById(userId);
+    let user = await UserRepository.findById(userId);
     if (!user) {
       const error = new Error('User not found');
       error.statusCode = 404;
       throw error;
     }
+    user = await this.ensureUserSystemApiKeyDefault(user);
     const systemKey = await this.getSystemApiKeyById(apiKeyId, maskValue);
     if (systemKey) {
       if (!user.useSystemApiKey) {
@@ -162,7 +198,7 @@ class ApiKeyService {
         error.statusCode = 403;
         throw error;
       }
-      systemKey.isDefault = user.defaultSystemApiKeyId && user.defaultSystemApiKeyId.toString() === systemKey._id.toString();
+      systemKey.isDefault = this.getIdString(user.defaultSystemApiKeyId) === this.getIdString(systemKey._id);
       return systemKey;
     }
     const apiKey = user.apiKeys.id(apiKeyId);

@@ -9,6 +9,10 @@ class ApiKeyRepository {
     return await SystemApiKey.find();
   }
 
+  async findDefaultSystemKey() {
+    return await SystemApiKey.findOne({ isActive: true }).sort({ createdAt: 1, _id: 1 });
+  }
+
   async findSystemKeyById(id) {
     return await SystemApiKey.findById(id);
   }
@@ -81,12 +85,44 @@ class ApiKeyRepository {
   }
 
   async setSystemApiKeyDefault(userId, apiKeyId, isDefault = true) {
-    const update = isDefault
-      ? { $set: { 'apiKeys.$[].isDefault': false, isSystemApiKeyDefault: true, defaultSystemApiKeyId: apiKeyId } }
-      : { $set: { isSystemApiKeyDefault: false, defaultSystemApiKeyId: null } };
+    const user = await User.findById(userId);
+    if (!user) return null;
 
-    const updatedUser = await User.findByIdAndUpdate(userId, update, { new: true });
-    return updatedUser;
+    if (isDefault) {
+      user.apiKeys.forEach(apiKey => {
+        apiKey.isDefault = false;
+      });
+      user.useSystemApiKey = true;
+      user.isSystemApiKeyDefault = true;
+      user.defaultSystemApiKeyId = apiKeyId;
+    } else {
+      user.isSystemApiKeyDefault = false;
+      user.defaultSystemApiKeyId = null;
+    }
+
+    return await user.save();
+  }
+
+  async enableSystemApiKey(userId, apiKeyId = null) {
+    const update = apiKeyId
+      ? { useSystemApiKey: true, isSystemApiKeyDefault: true, defaultSystemApiKeyId: apiKeyId }
+      : { useSystemApiKey: true };
+
+    return await User.findByIdAndUpdate(userId, { $set: update }, { new: true });
+  }
+
+  async setSystemApiKeyDefaultForAllUsers(apiKeyId) {
+    const users = await User.find();
+    for (const user of users) {
+      user.apiKeys.forEach(apiKey => {
+        apiKey.isDefault = false;
+      });
+      user.useSystemApiKey = true;
+      user.isSystemApiKeyDefault = true;
+      user.defaultSystemApiKeyId = apiKeyId;
+      await user.save();
+    }
+    return { modifiedCount: users.length };
   }
 
   async clearSystemKeyFromAllUsers(systemApiKeyId) {
