@@ -1,20 +1,29 @@
 import Joi from 'joi';
 
-export const createUserValidator = Joi.object({
-  email: Joi.string().email().required(),
-  password: Joi.string().required(),
-  role: Joi.string().valid('admin', 'instructor', 'advanced').required(),
-  useSystemApiKey: Joi.boolean().required(),
+const email = Joi.string().email().required();
+const password = Joi.string().required();
+const newPassword = password; // Luego definimos los requisitos de newPassword
+const role = Joi.string().valid('admin', 'instructor', 'advanced').required();
+const useSystemApiKey = Joi.boolean().required();
+
+export const credentialsValidator = Joi.object({
+  email,
+  password,
+});
+
+export const registrationValidator = Joi.object({
+  email,
+  password: newPassword,
+});
+
+export const createUserValidator = registrationValidator.keys({
+  role,
+  useSystemApiKey,
 });
 
 export const updateUserValidator = Joi.object({
-  email: Joi.string().email().optional(),
-  role: Joi.string().valid('admin', 'instructor', 'advanced').optional(),
-  password: Joi.string().optional(),
-  useSystemApiKey: Joi.boolean().optional(),
-});
-
-export const loginUserValidator = Joi.object({
-  email: Joi.string().email().required(),
-  password: Joi.string().required(),
+  email: email.optional(),
+  password: newPassword.optional(),
+  role: role.optional(),
+  useSystemApiKey: useSystemApiKey.optional(),
 });

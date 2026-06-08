@@ -41,6 +41,10 @@ const UserSchema = new Schema(
           type: String,
           required: true,
         },
+        // Default model to use with this key (chosen once at key creation).
+        model: {
+          type: String,
+        },
         baseUrl: {
           type: String,
           required: function() {

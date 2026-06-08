@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   login,
+  register,
   createUser,
   getUserById,
   getUsers,
@@ -12,10 +13,12 @@ import {
 } from '../../controllers/v1/userController.js';
 
 import { requireAdmin, requireInternToken, requireJwtAuthentication } from '../../middlewares/auth.js';
+import { requireValidTurnstileToken } from '../../middlewares/turnstile.js';
 const router = express.Router();
 
 // POST
-router.post('/login', login);
+router.post('/login', requireValidTurnstileToken, login);
+router.post('/register', requireValidTurnstileToken, register);
 router.post('/', requireAdmin, createUser);
 // GET
 router.get('/', requireAdmin, getUsers);
