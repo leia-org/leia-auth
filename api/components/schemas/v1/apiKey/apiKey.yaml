@@ -1,0 +1,49 @@
+type: object
+properties:
+  _id:
+    $ref: '../../mongoId.yaml'
+  id:
+    $ref: '../../mongoId.yaml'
+  description:
+    type: string
+    example: OpenAI personal key
+  provider:
+    $ref: './provider.yaml'
+  model:
+    type: string
+    nullable: true
+    example: gpt-4o-mini
+  baseUrl:
+    type: string
+    format: uri
+    nullable: true
+    example: http://localhost:11434
+  keyValue:
+    type: string
+    description: Masked key value in public endpoints, raw value only in internal get-value endpoint.
+    example: sk-...abcd
+  managementUrl:
+    type: string
+    format: uri
+    nullable: true
+    example: https://platform.openai.com/api-keys
+  isActive:
+    type: boolean
+    example: true
+  isDefault:
+    type: boolean
+    example: false
+  isSystemApiKey:
+    type: boolean
+    example: false
+  createdAt:
+    type: string
+    format: date-time
+  updatedAt:
+    type: string
+    format: date-time
+required:
+  - description
+  - provider
+  - keyValue
+  - isActive

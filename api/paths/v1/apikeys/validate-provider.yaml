@@ -1,0 +1,47 @@
+post:
+  tags:
+    - API Keys v1
+  summary: Validate API key provider for Runner
+  description: Internal endpoint that checks if an API key belongs to the requested provider.
+  security:
+    - internTokenAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../../components/schemas/v1/apiKey/internalApiKeyRequest.yaml'
+  responses:
+    '200':
+      description: API key is compatible with the requested provider.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/apiKey/compatibilityResponse.yaml'
+    '400':
+      description: API key provider mismatch.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+    '401':
+      description: Invalid internal token.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+    '404':
+      description: API key or user not found.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+          examples:
+            userNotFound:
+              summary: User not found
+              value:
+                message: User not found
+            apiKeyNotFound:
+              summary: API key not found
+              value:
+                message: API Key not found

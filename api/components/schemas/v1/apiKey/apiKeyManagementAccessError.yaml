@@ -1,0 +1,8 @@
+type: object
+properties:
+  message:
+    type: string
+    example: 'Unauthorized: User API key management access required'
+required:
+  - message
+description: User API key management access error response.

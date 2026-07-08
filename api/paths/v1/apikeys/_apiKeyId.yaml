@@ -1,0 +1,119 @@
+parameters:
+  - in: path
+    name: apiKeyId
+    required: true
+    schema:
+      $ref: '../../../components/schemas/mongoId.yaml'
+get:
+  tags:
+    - API Keys v1
+  summary: Get API key by id
+  description: Returns a masked API key by id for the authenticated user.
+  security:
+    - bearerAuth: []
+  responses:
+    '200':
+      description: API key found.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/apiKey/apiKey.yaml'
+    '401':
+      description: Authentication required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+    '403':
+      description: User cannot access this system API key.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+    '404':
+      description: API key or user not found.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+          examples:
+            userNotFound:
+              summary: User not found
+              value:
+                message: User not found
+            apiKeyNotFound:
+              summary: API key not found
+              value:
+                message: API Key not found
+put:
+  tags:
+    - API Keys v1
+  summary: Update a user API key
+  description: Updates an API key for the authenticated user and notifies Runner about revocation.
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../../components/schemas/v1/apiKey/updateApiKey.yaml'
+  responses:
+    '200':
+      description: API key updated.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/apiKey/apiKey.yaml'
+    '400':
+      description: Validation or provider verification error.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/apiKey/apiKeyValidationError.yaml'
+    '401':
+      description: Authentication required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+    '403':
+      description: API key management access required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/apiKey/apiKeyManagementAccessError.yaml'
+    '404':
+      description: API key not found.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/apiKey/apiKeyNotFoundError.yaml'
+delete:
+  tags:
+    - API Keys v1
+  summary: Delete a user API key
+  description: Deletes an API key for the authenticated user and notifies Runner about revocation.
+  security:
+    - bearerAuth: []
+  responses:
+    '204':
+      description: API key deleted.
+    '401':
+      description: Authentication required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+    '403':
+      description: API key management access required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/apiKey/apiKeyManagementAccessError.yaml'
+    '404':
+      description: API key not found.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/apiKey/apiKeyNotFoundError.yaml'

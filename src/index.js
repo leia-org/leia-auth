@@ -1,4 +1,5 @@
 import express from 'express';
+import swaggerUi from 'swagger-ui-express';
 import cors from 'cors';
 import logger from './utils/logger.js';
 import connectDB from './config/db.js';
@@ -7,6 +8,7 @@ import requestLogger from './middlewares/requestLogger.js';
 import { auth } from './middlewares/auth.js';
 import userRoutesV1 from './routes/v1/userRoutes.js';
 import apiKeyRoutesV1 from './routes/v1/apiKeyRoutes.js';
+import SwaggerParser from 'swagger-parser';
 
 
 const app = express();
@@ -21,6 +23,15 @@ app.use(
 app.use(express.json());
 app.use(requestLogger);
 app.use(auth);
+
+// Swagger
+SwaggerParser.bundle('./api/openapi.yaml')
+  .then((bundledDoc) => {
+    app.use('/docs', swaggerUi.serve, swaggerUi.setup(bundledDoc));
+  })
+  .catch((error) => {
+    console.error('Error bundling OAS file:', error);
+  });
 
 // Rutas principales del microservicio de Auth
 app.use('/api/v1/users', userRoutesV1);

@@ -1,0 +1,32 @@
+post:
+  tags:
+    - API Keys v1
+  summary: Create a system API key
+  description: Creates a shared system API key. Requires admin access.
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../../components/schemas/v1/apiKey/newApiKey.yaml'
+  responses:
+    '201':
+      description: System API key created.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/apiKey/apiKey.yaml'
+    '400':
+      description: Validation or provider verification error.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/apiKey/apiKeyValidationError.yaml'
+    '403':
+      description: Admin access required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
