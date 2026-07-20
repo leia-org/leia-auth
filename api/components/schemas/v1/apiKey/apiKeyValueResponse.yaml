@@ -1,0 +1,12 @@
+type: object
+properties:
+  keyValue:
+    type: string
+    description: Raw decrypted API key value for internal runner use.
+    example: sk-live-value
+  baseUrl:
+    type: string
+    format: uri
+    example: http://localhost:11434
+required:
+  - keyValue

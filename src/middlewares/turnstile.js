@@ -2,7 +2,10 @@ import axios from 'axios';
 import logger from '../utils/logger.js';
 
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+const DEFAULT_BYPASS_TOKEN = 'swagger-turnstile-token';
 const isTurnstileEnabled = () => process.env.TURNSTILE_ENABLED?.toLowerCase() !== 'false';
+const isProduction = () => process.env.NODE_ENV === 'production';
+const getBypassToken = () => process.env.TURNSTILE_BYPASS_TOKEN || DEFAULT_BYPASS_TOKEN;
 
 const getRemoteIp = (req) => {
   const forwardedFor = req.headers['x-forwarded-for'];
@@ -24,6 +27,11 @@ export const requireValidTurnstileToken = async (req, res, next) => {
 
   if (!token || typeof token !== 'string' || token.length > 2048) {
     return res.status(400).json({ message: 'Please complete the verification challenge.' });
+  }
+
+  if (!isProduction() && token === getBypassToken()) {
+    delete req.body['cf-turnstile-response'];
+    return next();
   }
 
   if (!process.env.CLOUDFLARE_SECRET_KEY) {

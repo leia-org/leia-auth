@@ -1,0 +1,60 @@
+post:
+  tags:
+    - Users v1
+  summary: Create a user
+  description: Creates a user with an explicit role. Requires admin access.
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../../components/schemas/v1/user/newUser.yaml'
+  responses:
+    '201':
+      description: User created.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/user/user.yaml'
+    '400':
+      description: Validation error.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/user/validationError.yaml'
+    '403':
+      description: Admin access required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+    '409':
+      description: Email already exists.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/user/duplicateKeyError.yaml'
+get:
+  tags:
+    - Users v1
+  summary: List users
+  description: Returns all users. Requires admin access.
+  security:
+    - bearerAuth: []
+  responses:
+    '200':
+      description: Users found.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '../../../components/schemas/v1/user/user.yaml'
+    '403':
+      description: Admin access required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'

@@ -1,0 +1,8 @@
+type: object
+properties:
+  message:
+    type: string
+    example: User not found
+required:
+  - message
+description: User not found error response.

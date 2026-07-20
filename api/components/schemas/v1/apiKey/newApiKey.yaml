@@ -1,0 +1,37 @@
+type: object
+properties:
+  description:
+    type: string
+    example: OpenAI personal key
+  provider:
+    $ref: './provider.yaml'
+  baseUrl:
+    type: string
+    format: uri
+    nullable: true
+    description: Required when provider is ollama.
+    example: http://localhost:11434
+  keyValue:
+    type: string
+    example: sk-example
+  managementUrl:
+    type: string
+    format: uri
+    nullable: true
+    example: https://platform.openai.com/api-keys
+  model:
+    type: string
+    nullable: true
+    example: gpt-4o-mini
+  isActive:
+    type: boolean
+    example: true
+  isDefault:
+    type: boolean
+    example: false
+required:
+  - description
+  - provider
+  - keyValue
+  - isActive
+  - isDefault

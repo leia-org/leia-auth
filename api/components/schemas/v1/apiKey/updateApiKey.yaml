@@ -1,0 +1,30 @@
+type: object
+properties:
+  description:
+    type: string
+    example: Updated key description
+  provider:
+    $ref: './provider.yaml'
+  baseUrl:
+    type: string
+    format: uri
+    nullable: true
+    example: http://localhost:11434
+  keyValue:
+    type: string
+    nullable: true
+    description: Required when changing provider.
+    example: sk-new-example
+  managementUrl:
+    type: string
+    format: uri
+    nullable: true
+    example: https://platform.openai.com/api-keys
+  model:
+    type: string
+    nullable: true
+    example: gpt-4o-mini
+  isActive:
+    type: boolean
+    example: true
+minProperties: 1

@@ -1,0 +1,32 @@
+put:
+  tags:
+    - Users v1
+  summary: Update current user profile
+  description: Updates the authenticated user's email.
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../../components/schemas/v1/user/updateProfile.yaml'
+  responses:
+    '200':
+      description: Profile updated.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/user/user.yaml'
+    '400':
+      description: Email already in use.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+    '401':
+      description: Login required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'

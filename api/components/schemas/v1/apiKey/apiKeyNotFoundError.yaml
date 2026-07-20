@@ -1,0 +1,8 @@
+type: object
+properties:
+  message:
+    type: string
+    example: API Key not found
+required:
+  - message
+description: API key not found error response.
