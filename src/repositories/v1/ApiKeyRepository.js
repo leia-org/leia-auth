@@ -26,6 +26,10 @@ class ApiKeyRepository {
     return await SystemApiKey.findByIdAndDelete(id);
   }
 
+  async findUsersByDefaultSystemKey(systemApiKeyId) {
+    return await User.find({ defaultSystemApiKeyId: systemApiKeyId }).select('_id');
+  }
+
   // USER API KEYS
 
   async getApiKeyById(userId, apiKeyId) {
