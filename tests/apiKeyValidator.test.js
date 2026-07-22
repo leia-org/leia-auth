@@ -88,4 +88,14 @@ describe('Coherencia proveedor-clave y URL base local', () => {
     const { error } = updateApiKeyValidator.validate({ provider: 'openai', keyValue: 'sk-nuevaClave123' });
     expect(error).toBeUndefined();
   });
+
+  test.each([null, '', '   '])('al actualizar, no permite vaciar el modelo por defecto (%p)', (model) => {
+    const { error } = updateApiKeyValidator.validate({ model });
+    expect(error).toBeDefined();
+  });
+
+  test('al actualizar, permite cambiar el modelo por defecto', () => {
+    const { error } = updateApiKeyValidator.validate({ model: 'gpt-4.1-mini' });
+    expect(error).toBeUndefined();
+  });
 });

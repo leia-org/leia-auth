@@ -68,7 +68,8 @@ export const updateApiKeyValidator = Joi.object({
   }),
   keyValue: keyValueSchema.optional().allow(null, ''),
   managementUrl: Joi.string().uri().allow(null, '').optional(),
-  model: Joi.string().allow(null, '').optional(),
+  // Partial updates may omit the model, but an explicitly supplied model cannot clear it.
+  model: Joi.string().trim().optional(),
   isActive: Joi.boolean().optional(),
 })
 .min(1)

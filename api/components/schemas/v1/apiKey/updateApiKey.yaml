@@ -22,7 +22,8 @@ properties:
     example: https://platform.openai.com/api-keys
   model:
     type: string
-    nullable: true
+    minLength: 1
+    description: New default model. It may be omitted, but cannot be cleared.
     example: gpt-4o-mini
   isActive:
     type: boolean
