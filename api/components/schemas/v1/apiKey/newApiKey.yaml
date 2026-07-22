@@ -21,7 +21,6 @@ properties:
     example: https://platform.openai.com/api-keys
   model:
     type: string
-    nullable: true
     example: gpt-4o-mini
   isActive:
     type: boolean
@@ -32,6 +31,7 @@ properties:
 required:
   - description
   - provider
+  - model
   - keyValue
   - isActive
   - isDefault

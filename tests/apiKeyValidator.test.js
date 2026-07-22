@@ -5,6 +5,7 @@ import { createApiKeyValidator, updateApiKeyValidator } from '../src/validators/
 const validBase = {
   description: 'Mi clave',
   provider: 'openai',
+  model: 'gpt-4o-mini',
   keyValue: 'sk-abcDEF123456',
   isActive: true,
   isDefault: false,
@@ -17,6 +18,16 @@ function validateCreate(payload) {
 }
 
 describe('Validación de formato por proveedor', () => {
+  test('exige un modelo por defecto al crear la clave', () => {
+    const { model, ...withoutModel } = validBase;
+    void model;
+    expect(validateCreate(withoutModel)).toBeDefined();
+  });
+
+  test('rechaza un modelo por defecto vacío', () => {
+    expect(validateCreate({ ...validBase, model: '' })).toBeDefined();
+  });
+
   test('acepta una clave de OpenAI con el prefijo sk-', () => {
     expect(validateCreate(validBase)).toBeUndefined();
   });
