@@ -5,7 +5,8 @@ import {
   createUserValidator,
   updateUserValidator,
 } from '../../validators/v1/userValidator.js';
-import { generateToken } from '../../utils/jwt.js';
+import { generateSessionToken, generateToken } from '../../utils/jwt.js';
+import { clearSessionCookie, setSessionCookie } from '../../utils/sessionCookie.js';
 
 
 // No authentication required
@@ -14,8 +15,27 @@ export const login = async (req, res, next) => {
     const value = await credentialsValidator.validateAsync(req.body, { abortEarly: false });
 
     const user = await UserService.login(value.email, value.password);
-    const token = generateToken(user.toJSON());
+    const userData = user.toJSON();
+    const token = generateToken(userData);
+    setSessionCookie(res, generateSessionToken(userData));
     res.json({ token });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getSession = async (req, res, next) => {
+  try {
+    res.json({ token: generateToken(req.auth.payload) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const logout = async (req, res, next) => {
+  try {
+    clearSessionCookie(res);
+    res.status(204).end();
   } catch (err) {
     next(err);
   }
@@ -168,4 +188,3 @@ export const changePassword = async (req, res, next) => {
     next(err);
   }
 };
-

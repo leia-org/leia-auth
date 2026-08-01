@@ -13,9 +13,23 @@ import SwaggerParser from 'swagger-parser';
 
 const app = express();
 
+const allowedOrigins = [
+  ...(process.env.AUTH_ALLOWED_ORIGINS || '').split(','),
+  process.env.DESIGNER_FRONTEND_URL,
+  process.env.WORKBENCH_FRONTEND_URL,
+]
+  .map((origin) => origin?.trim())
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: [process.env.DESIGNER_FRONTEND_URL, process.env.WORKBENCH_FRONTEND_URL],
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`CORS origin not allowed: ${origin}`));
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   })

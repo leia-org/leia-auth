@@ -46,6 +46,48 @@ describe('auth() — autenticación transversal', () => {
     expect(next).toHaveBeenCalledWith();
   });
 
+  test('acepta la cookie host-only emitida por Auth como sesión central', () => {
+    process.env.SESSION_COOKIE_NAME = 'leia_session_test';
+    verifyToken.mockReturnValue({ id: 'u1', role: 'admin', type: 'session' });
+    const { req, res, next } = buildContext({
+      headers: { cookie: 'theme=light; leia_session_test=jwt-cookie; language=es' },
+    });
+
+    auth(req, res, next);
+
+    expect(verifyToken).toHaveBeenCalledWith('jwt-cookie');
+    expect(req.auth).toEqual({
+      method: 'SESSION',
+      payload: { id: 'u1', role: 'admin', type: 'session' },
+    });
+    expect(next).toHaveBeenCalledWith();
+  });
+
+  test('no permite usar un JWT de acceso como cookie de sesión', () => {
+    process.env.SESSION_COOKIE_NAME = 'leia_session_test';
+    verifyToken.mockReturnValue({ id: 'u1', role: 'admin', type: 'access' });
+    const { req, res, next } = buildContext({
+      headers: { cookie: 'leia_session_test=access-jwt' },
+    });
+
+    auth(req, res, next);
+
+    expect(req.auth).toBeNull();
+    expect(next).toHaveBeenCalledWith();
+  });
+
+  test('no permite usar un JWT de sesión como Bearer', () => {
+    verifyToken.mockReturnValue({ id: 'u1', role: 'admin', type: 'session' });
+    const { req, res, next } = buildContext({
+      headers: { authorization: 'Bearer session-jwt' },
+    });
+
+    auth(req, res, next);
+
+    expect(nextError(next).statusCode).toBe(401);
+    expect(req.auth).toBeNull();
+  });
+
   test('rechaza con 401 un encabezado Authorization mal formado', () => {
     const { req, res, next } = buildContext({ headers: { authorization: 'TokenSinBearer' } });
 
