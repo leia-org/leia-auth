@@ -165,13 +165,12 @@ class ApiKeyService {
       throw error;
     }
 
-    let user = await UserRepository.findById(userId);
+    const user = await UserRepository.findById(userId);
     if (!user) {
       const error = new Error('User not found');
       error.statusCode = 404;
       throw error;
     }
-    user = await this.ensureUserHasDefaultApiKey(userId, user);
     const apiKeys = user.apiKeys.map(apiKey => {
       const decrypted = decryptApiKeyValue(apiKey.toObject({virtuals: true}));
       return maskApiKeyValue(decrypted);

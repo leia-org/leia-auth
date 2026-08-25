@@ -137,23 +137,16 @@ describe('getUserApiKeys — listado de claves', () => {
     expect(result[0].isDefault).toBe(true);
   });
 
-  test('migra una cuenta existente sin clave predeterminada eligiendo la más antigua', async () => {
-    const oldKey = apiKeySubdoc({ _id: 'old', keyValue: 'old-secret', createdAt: '2025-01-01' });
-    const newKey = apiKeySubdoc({ _id: 'new', keyValue: 'new-secret', createdAt: '2026-01-01' });
-    const migratedUser = userDoc({
-      useSystemApiKey: false,
-      apiKeys: [apiKeySubdoc({ _id: 'old', keyValue: 'old-secret', createdAt: '2025-01-01', isDefault: true }), newKey],
-    });
+  test('no modifica una cuenta antigua sin clave predeterminada durante el listado', async () => {
     UserRepository.findById.mockResolvedValue(userDoc({
       useSystemApiKey: false,
-      apiKeys: [newKey, oldKey],
+      apiKeys: [apiKeySubdoc({ _id: 'old', keyValue: 'old-secret', createdAt: '2025-01-01' })],
     }));
-    ApiKeyRepository.markApiKeyAsDefault.mockResolvedValue(migratedUser);
 
     const result = await ApiKeyService.getUserApiKeys('user1');
 
-    expect(ApiKeyRepository.markApiKeyAsDefault).toHaveBeenCalledWith('user1', 'old');
-    expect(result.find(key => key._id === 'old').isDefault).toBe(true);
+    expect(ApiKeyRepository.markApiKeyAsDefault).not.toHaveBeenCalled();
+    expect(result[0].isDefault).toBeUndefined();
   });
 
   test('rechaza con 404 si el usuario no existe', async () => {
