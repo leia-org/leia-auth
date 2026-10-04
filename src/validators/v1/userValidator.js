@@ -4,7 +4,7 @@ const email = Joi.string().email().required();
 const password = Joi.string().required();
 const newPassword = password; // Luego definimos los requisitos de newPassword
 const role = Joi.string().valid('admin', 'instructor', 'advanced').required();
-const useSystemApiKey = Joi.boolean().required();
+const useSystemApiKey = Joi.boolean().default(true);
 
 export const credentialsValidator = Joi.object({
   email,
