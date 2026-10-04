@@ -3,4 +3,5 @@ enum:
   - openai
   - gemini
   - ollama
+  - alma
 example: openai
