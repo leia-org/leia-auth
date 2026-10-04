@@ -20,7 +20,7 @@ const UserSchema = new Schema(
     useSystemApiKey: {
       type: Boolean,
       required: true,
-      default: false
+      default: true
     },
     isSystemApiKeyDefault: {
       type: Boolean,
