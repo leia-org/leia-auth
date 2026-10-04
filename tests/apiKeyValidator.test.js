@@ -99,3 +99,40 @@ describe('Coherencia proveedor-clave y URL base local', () => {
     expect(error).toBeUndefined();
   });
 });
+
+describe('Claves de ALMA', () => {
+  const almaBase = {
+    ...validBase,
+    provider: 'alma',
+    model: 'meta-llama/Llama-3.1-8B-Instruct',
+    keyValue: 'a1b2c3d4e5f6',
+    baseUrl: 'https://alma.us.es/api/models/llama-3.1-8b-instruct/v1',
+  };
+
+  test('acepta una clave de ALMA con la Base URL de su modelo', () => {
+    expect(validateCreate(almaBase)).toBeUndefined();
+  });
+
+  test('exige la Base URL para ALMA', () => {
+    const { baseUrl, ...withoutBaseUrl } = almaBase;
+    void baseUrl;
+    const error = validateCreate(withoutBaseUrl);
+    expect(error).toBeDefined();
+    expect(error.message).toMatch(/ALMA, la Base URL/);
+  });
+
+  test('rechaza una Base URL vacía para ALMA', () => {
+    expect(validateCreate({ ...almaBase, baseUrl: '' })).toBeDefined();
+  });
+
+  test('rechaza una clave de ALMA con espacios', () => {
+    const error = validateCreate({ ...almaBase, keyValue: 'clave con espacios' });
+    expect(error).toBeDefined();
+    expect(error.message).toMatch(/ALMA/);
+  });
+
+  test('al actualizar, no permite vaciar la Base URL de ALMA', () => {
+    const { error } = updateApiKeyValidator.validate({ provider: 'alma', keyValue: 'nueva', baseUrl: '' });
+    expect(error).toBeDefined();
+  });
+});

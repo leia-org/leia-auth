@@ -16,7 +16,11 @@ const PROVIDER_CONFIG = {
   ollama: {
     regex: /^.+$/,
     error: 'La API Key para Ollama puede contener cualquier carácter.'
-}
+},
+  alma: {
+    regex: /^\S+$/,
+    error: 'La API Key de ALMA no puede contener espacios.'
+  }
 };
 
 const localProviderErrorMessages = {
@@ -24,6 +28,15 @@ const localProviderErrorMessages = {
     'any.invalid': 'Para un provider local, la Base URL no puede enviarse vacía.',
     'string.base': 'Para un provider local, la Base URL no puede ser nula.',
     'string.uri': 'La Base URL debe ser un enlace válido (ej: http://localhost:11434).'
+  };
+
+// ALMA sirve cada modelo en su propia Base URL, así que es obligatoria.
+const almaBaseUrlErrorMessages = {
+    'any.required': 'Para ALMA, la Base URL del modelo es obligatoria (ej: https://alma.us.es/api/models/{modelo}/v1).',
+    'string.empty': 'Para ALMA, la Base URL del modelo no puede enviarse vacía.',
+    'any.invalid': 'Para ALMA, la Base URL del modelo no puede enviarse vacía.',
+    'string.base': 'Para ALMA, la Base URL del modelo no puede ser nula.',
+    'string.uri': 'La Base URL debe ser un enlace válido (ej: https://alma.us.es/api/models/{modelo}/v1).'
   };
 
 const providerSchema = Joi.string()
@@ -48,6 +61,7 @@ export const createApiKeyValidator = Joi.object({
   baseUrl: Joi.string().uri().optional().allow(null, '').when('provider', {
     switch: [
       { is: 'ollama', then: Joi.string().uri().required().invalid(null, '').messages(localProviderErrorMessages) },
+      { is: 'alma', then: Joi.string().uri().required().invalid(null, '').messages(almaBaseUrlErrorMessages) },
     ]
   }),
   keyValue: keyValueSchema.required(),
@@ -64,6 +78,7 @@ export const updateApiKeyValidator = Joi.object({
   baseUrl: Joi.string().uri().allow(null, '').optional().when('provider', {
     switch: [
       { is: 'ollama', then: Joi.string().uri().optional().invalid(null,'').messages(localProviderErrorMessages) },
+      { is: 'alma', then: Joi.string().uri().optional().invalid(null,'').messages(almaBaseUrlErrorMessages) },
     ]
   }),
   keyValue: keyValueSchema.optional().allow(null, ''),
