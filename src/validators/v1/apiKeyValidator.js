@@ -5,10 +5,7 @@ const PROVIDER_CONFIG = {
     regex: /^sk-[a-zA-Z0-9_-]+$/,
     error: 'La API Key no se corresponde con el formato de OpenAI (debe empezar por "sk-").'
   },
-  gemini: {
-    regex: /^AIzaSy[a-zA-Z0-9_-]+$/,
-    error: 'La API Key no se corresponde con el formato de Gemini (debe empezar por "AIzaSy").'
-  },
+  gemini: {},
   anthropic: {
     regex: /^sk-ant-[a-zA-Z0-9_-]+$/,
     error: 'La API Key no se corresponde con el formato de Anthropic (debe empezar por "sk-ant-").'
@@ -33,7 +30,7 @@ const providerSchema = Joi.string()
   });
 
   const keyValueSchema = Joi.string().when('provider', {
-  switch: Object.entries(PROVIDER_CONFIG).map(([name, config]) => ({
+  switch: Object.entries(PROVIDER_CONFIG).filter(([, config]) => config.regex).map(([name, config]) => ({
     is: name,
     then: Joi.string().pattern(config.regex).messages({
       'string.pattern.base': config.error
