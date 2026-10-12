@@ -32,9 +32,15 @@ describe('Validación de formato por proveedor', () => {
     expect(validateCreate(validBase)).toBeUndefined();
   });
 
-  test('acepta una clave de Gemini con el prefijo AIzaSy', () => {
-    const error = validateCreate({ ...validBase, provider: 'gemini', keyValue: 'AIzaSyABC123_def' });
-    expect(error).toBeUndefined();
+  test.each(['AIzaSyABC123_def', 'AQ.example-gemini-key', 'clave-sin-prefijo'])(
+    'acepta una clave de Gemini sin exigir un prefijo (%s)', (keyValue) => {
+      const error = validateCreate({ ...validBase, provider: 'gemini', keyValue });
+      expect(error).toBeUndefined();
+    },
+  );
+
+  test.each([undefined, '', null, 123])('rechaza una clave de Gemini ausente, vacía o no textual (%p)', (keyValue) => {
+    expect(validateCreate({ ...validBase, provider: 'gemini', keyValue })).toBeDefined();
   });
 
   test('acepta una clave de Anthropic con el prefijo sk-ant-', () => {
@@ -88,6 +94,13 @@ describe('Coherencia proveedor-clave y URL base local', () => {
     const { error } = updateApiKeyValidator.validate({ provider: 'openai', keyValue: 'sk-nuevaClave123' });
     expect(error).toBeUndefined();
   });
+
+  test.each(['AIzaSyABC123_def', 'AQ.example-gemini-key', 'clave-sin-prefijo'])(
+    'al actualizar, acepta una clave de Gemini sin exigir un prefijo (%s)', (keyValue) => {
+      const { error } = updateApiKeyValidator.validate({ provider: 'gemini', keyValue });
+      expect(error).toBeUndefined();
+    },
+  );
 
   test.each([null, '', '   '])('al actualizar, no permite vaciar el modelo por defecto (%p)', (model) => {
     const { error } = updateApiKeyValidator.validate({ model });
