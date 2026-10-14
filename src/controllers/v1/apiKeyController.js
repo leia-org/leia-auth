@@ -12,6 +12,9 @@ const mapVerificationErrorToField = (err) => {
   } else if (message.includes('has rejected the API key') || message.includes('service is not available')) {
     err.isJoi = true;
     err.details = [{ path: ['keyValue'], message }];
+  } else if (message.includes('Base URL')) {
+    err.isJoi = true;
+    err.details = [{ path: ['baseUrl'], message }];
   }
 };
 
@@ -21,7 +24,7 @@ export const createApiKey = async (req, res, next) => {
   try {
     const userId = req.auth?.payload?.id;
     const value = await createApiKeyValidator.validateAsync(req.body, { abortEarly: false });
-    await ProviderService.verifyApiKeyIntegrity(value.provider, value.keyValue);
+    await ProviderService.verifyApiKeyIntegrity(value.provider, value.keyValue, value.baseUrl);
     const savedApiKey = await ApiKeyService.createUserApiKey(userId, value);
     res.status(201).json(savedApiKey);
   } catch (err) {
@@ -76,7 +79,8 @@ export const updateApiKey = async (req, res, next) => {
 
     if (isNewKeyProvided) {
       const providerToVerify = value.provider || originalKey.provider;
-      await ProviderService.verifyApiKeyIntegrity(providerToVerify, value.keyValue);
+      const baseUrlToVerify = value.baseUrl || originalKey.baseUrl;
+      await ProviderService.verifyApiKeyIntegrity(providerToVerify, value.keyValue, baseUrlToVerify);
     } else {
       delete value.keyValue;
     }
@@ -170,7 +174,7 @@ export const createSystemApiKey = async (req, res, next) => {
   try {
     const userId = req.auth?.payload?.id;
     const value = await createApiKeyValidator.validateAsync(req.body, { abortEarly: false });
-    await ProviderService.verifyApiKeyIntegrity(value.provider, value.keyValue);
+    await ProviderService.verifyApiKeyIntegrity(value.provider, value.keyValue, value.baseUrl);
     const savedApiKey = await ApiKeyService.createSystemApiKey(userId, value);
     res.status(201).json(savedApiKey);
   } catch (err) {
@@ -184,7 +188,9 @@ export const updateSystemApiKey = async (req, res, next) => {
     const id = req.params.id;
     const value = await updateApiKeyValidator.validateAsync(req.body, { abortEarly: true });
     if (value.keyValue && value.keyValue !== '') {
-        await ProviderService.verifyApiKeyIntegrity(value.provider, value.keyValue);
+        const baseUrlToVerify = value.baseUrl
+          || (value.provider === 'alma' ? (await ApiKeyService.getSystemApiKeyById(id))?.baseUrl : undefined);
+        await ProviderService.verifyApiKeyIntegrity(value.provider, value.keyValue, baseUrlToVerify);
     } else {
         delete value.keyValue;
     }
