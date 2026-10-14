@@ -1,4 +1,5 @@
 import UserRepository from '../../repositories/v1/UserRepository.js';
+import ApiKeyService from './ApiKeyService.js';
 
 class UserService {
   async findAll() {
@@ -18,7 +19,11 @@ class UserService {
   }
 
   async create(userData) {
-    return await UserRepository.create(userData);
+    const user = await UserRepository.create(userData);
+    // A user that relies on system API keys starts with one of them as default,
+    // so the Designer and the Workbench can preselect it from the first login.
+    const userWithDefaultKey = await ApiKeyService.ensureUserHasDefaultApiKey(user._id, user);
+    return userWithDefaultKey || user;
   }
 
   async update(id, userData) {
