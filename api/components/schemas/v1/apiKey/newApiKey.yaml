@@ -9,7 +9,7 @@ properties:
     type: string
     format: uri
     nullable: true
-    description: Required when provider is ollama.
+    description: Required when provider is ollama or alma. For alma, the base URL of one model, e.g. https://alma.us.es/api/models/{model}/v1.
     example: http://localhost:11434
   keyValue:
     type: string

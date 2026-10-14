@@ -5,10 +5,7 @@ const PROVIDER_CONFIG = {
     regex: /^sk-[a-zA-Z0-9_-]+$/,
     error: 'La API Key no se corresponde con el formato de OpenAI (debe empezar por "sk-").'
   },
-  gemini: {
-    regex: /^AIzaSy[a-zA-Z0-9_-]+$/,
-    error: 'La API Key no se corresponde con el formato de Gemini (debe empezar por "AIzaSy").'
-  },
+  gemini: {},
   anthropic: {
     regex: /^sk-ant-[a-zA-Z0-9_-]+$/,
     error: 'La API Key no se corresponde con el formato de Anthropic (debe empezar por "sk-ant-").'
@@ -16,7 +13,11 @@ const PROVIDER_CONFIG = {
   ollama: {
     regex: /^.+$/,
     error: 'La API Key para Ollama puede contener cualquier carácter.'
-}
+},
+  alma: {
+    regex: /^\S+$/,
+    error: 'La API Key de ALMA no puede contener espacios.'
+  }
 };
 
 const localProviderErrorMessages = {
@@ -26,6 +27,15 @@ const localProviderErrorMessages = {
     'string.uri': 'La Base URL debe ser un enlace válido (ej: http://localhost:11434).'
   };
 
+// ALMA sirve cada modelo en su propia Base URL, así que es obligatoria.
+const almaBaseUrlErrorMessages = {
+    'any.required': 'Para ALMA, la Base URL del modelo es obligatoria (ej: https://alma.us.es/api/models/{modelo}/v1).',
+    'string.empty': 'Para ALMA, la Base URL del modelo no puede enviarse vacía.',
+    'any.invalid': 'Para ALMA, la Base URL del modelo no puede enviarse vacía.',
+    'string.base': 'Para ALMA, la Base URL del modelo no puede ser nula.',
+    'string.uri': 'La Base URL debe ser un enlace válido (ej: https://alma.us.es/api/models/{modelo}/v1).'
+  };
+
 const providerSchema = Joi.string()
   .valid(...Object.keys(PROVIDER_CONFIG))
   .messages({
@@ -33,7 +43,7 @@ const providerSchema = Joi.string()
   });
 
   const keyValueSchema = Joi.string().when('provider', {
-  switch: Object.entries(PROVIDER_CONFIG).map(([name, config]) => ({
+  switch: Object.entries(PROVIDER_CONFIG).filter(([, config]) => config.regex).map(([name, config]) => ({
     is: name,
     then: Joi.string().pattern(config.regex).messages({
       'string.pattern.base': config.error
@@ -48,6 +58,7 @@ export const createApiKeyValidator = Joi.object({
   baseUrl: Joi.string().uri().optional().allow(null, '').when('provider', {
     switch: [
       { is: 'ollama', then: Joi.string().uri().required().invalid(null, '').messages(localProviderErrorMessages) },
+      { is: 'alma', then: Joi.string().uri().required().invalid(null, '').messages(almaBaseUrlErrorMessages) },
     ]
   }),
   keyValue: keyValueSchema.required(),
@@ -64,6 +75,7 @@ export const updateApiKeyValidator = Joi.object({
   baseUrl: Joi.string().uri().allow(null, '').optional().when('provider', {
     switch: [
       { is: 'ollama', then: Joi.string().uri().optional().invalid(null,'').messages(localProviderErrorMessages) },
+      { is: 'alma', then: Joi.string().uri().optional().invalid(null,'').messages(almaBaseUrlErrorMessages) },
     ]
   }),
   keyValue: keyValueSchema.optional().allow(null, ''),
