@@ -1,6 +1,7 @@
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 import cors from 'cors';
+import { createFrontendOriginHandler } from './utils/frontendOrigins.js';
 import logger from './utils/logger.js';
 import connectDB from './config/db.js';
 import errorHandler from './middlewares/errorHandler.js';
@@ -23,13 +24,7 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
-      callback(new Error(`CORS origin not allowed: ${origin}`));
-    },
+    origin: createFrontendOriginHandler(allowedOrigins),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   })
