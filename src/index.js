@@ -10,9 +10,14 @@ import { auth } from './middlewares/auth.js';
 import userRoutesV1 from './routes/v1/userRoutes.js';
 import apiKeyRoutesV1 from './routes/v1/apiKeyRoutes.js';
 import SwaggerParser from 'swagger-parser';
+import { createTestLoginRouter, testLoginStatus } from './routes/testLogin.js';
 
 
 const app = express();
+
+// This is a top-level browser form callback from the protected Access hostname.
+// Its router verifies the Access assertion and exact Origin before issuing cookies.
+app.use('/test-login', createTestLoginRouter());
 
 const allowedOrigins = [
   ...(process.env.AUTH_ALLOWED_ORIGINS || '').split(','),
@@ -45,6 +50,7 @@ SwaggerParser.bundle('./api/openapi.yaml')
 // Rutas principales del microservicio de Auth
 app.use('/api/v1/users', userRoutesV1);
 app.use('/api/v1/apikeys', apiKeyRoutesV1);
+app.get('/api/v1/test-login/status', testLoginStatus);
 
 // Error handling middleware
 app.use(errorHandler);
