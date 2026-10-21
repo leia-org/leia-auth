@@ -1,0 +1,7 @@
+type: object
+properties:
+  isCompatible:
+    type: boolean
+    example: true
+required:
+  - isCompatible

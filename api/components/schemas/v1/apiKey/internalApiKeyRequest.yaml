@@ -1,0 +1,12 @@
+type: object
+properties:
+  provider:
+    $ref: './provider.yaml'
+  apiKeyId:
+    $ref: '../../mongoId.yaml'
+  apiKeyRequesterId:
+    $ref: '../../mongoId.yaml'
+required:
+  - provider
+  - apiKeyId
+  - apiKeyRequesterId

@@ -1,0 +1,20 @@
+type: object
+properties:
+  email:
+    type: string
+    format: email
+    example: advanced@leia.local
+  password:
+    type: string
+    format: password
+    example: super-secret-password
+  role:
+    $ref: './role.yaml'
+  useSystemApiKey:
+    type: boolean
+    example: true
+required:
+  - email
+  - password
+  - role
+  - useSystemApiKey

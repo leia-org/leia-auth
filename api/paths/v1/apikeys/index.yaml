@@ -1,0 +1,72 @@
+post:
+  tags:
+    - API Keys v1
+  summary: Create a user API key
+  description: Creates an API key for the authenticated user. Requires API key management access.
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../../components/schemas/v1/apiKey/newApiKey.yaml'
+  responses:
+    '201':
+      description: API key created.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/apiKey/apiKey.yaml'
+    '400':
+      description: Validation or provider verification error.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/apiKey/apiKeyValidationError.yaml'
+    '401':
+      description: Authentication required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+    '403':
+      description: API key management access required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/apiKey/apiKeyManagementAccessError.yaml'
+get:
+  tags:
+    - API Keys v1
+  summary: List API keys
+  description: Lists personal API keys and accessible system API keys for the authenticated user.
+  security:
+    - bearerAuth: []
+  responses:
+    '200':
+      description: API keys found.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '../../../components/schemas/v1/apiKey/apiKey.yaml'
+    '401':
+      description: Authentication required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+    '403':
+      description: API key management access required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/apiKey/apiKeyManagementAccessError.yaml'
+    '404':
+      description: User not found.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/userNotFoundError.yaml'

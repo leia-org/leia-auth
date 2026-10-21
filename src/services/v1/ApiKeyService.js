@@ -37,6 +37,45 @@ class ApiKeyService {
     return user;
   }
 
+  _creationTime(key, fallbackIndex) {
+    if (key.createdAt) {
+      const timestamp = new Date(key.createdAt).getTime();
+      if (!Number.isNaN(timestamp)) return timestamp;
+    }
+    const id = key._id || key.id;
+    if (id && typeof id.getTimestamp === 'function') return id.getTimestamp().getTime();
+    return Number.MAX_SAFE_INTEGER - 1000 + fallbackIndex;
+  }
+
+  async ensureUserHasDefaultApiKey(userId, existingUser = null) {
+    let user = existingUser || await UserRepository.findById(userId);
+    if (!user) return null;
+
+    const systemKeys = user.useSystemApiKey ? await ApiKeyRepository.findAllSystemKeys() : [];
+    const personalKeys = Array.from(user.apiKeys || []);
+    const defaultSystemId = user.defaultSystemApiKeyId?.toString();
+    const hasValidSystemDefault = defaultSystemId && systemKeys.some(
+      key => (key._id || key.id)?.toString() === defaultSystemId
+    );
+    if (hasValidSystemDefault || personalKeys.some(key => key.isDefault)) return user;
+
+    const availableKeys = [
+      ...systemKeys.map((key, index) => ({ key, isSystem: true, index })),
+      ...personalKeys.map((key, index) => ({ key, isSystem: false, index: systemKeys.length + index })),
+    ];
+    if (availableKeys.length === 0) return user;
+
+    const oldest = availableKeys.reduce((currentOldest, candidate) =>
+      this._creationTime(candidate.key, candidate.index) < this._creationTime(currentOldest.key, currentOldest.index)
+        ? candidate
+        : currentOldest
+    );
+    const apiKeyId = oldest.key._id || oldest.key.id;
+    return oldest.isSystem
+      ? ApiKeyRepository.setSystemApiKeyDefault(userId, apiKeyId, true)
+      : ApiKeyRepository.markApiKeyAsDefault(userId, apiKeyId);
+  }
+
   // MÉTODOS DE SYSTEM API KEYS
 
   async getAllSystemApiKeys() {
@@ -55,13 +94,15 @@ class ApiKeyService {
     return maskValue ? maskApiKeyValue(decrypted) : decrypted;
   }
 
-  async createSystemApiKey(_userId, data) {
+  async createSystemApiKey(userId, data) {
     const existingDefaultSystemKey = await ApiKeyRepository.findDefaultSystemKey();
     const newKey = await ApiKeyRepository.createSystemKey(data);
     const decrypted = decryptApiKeyValue(newKey.toObject({ virtuals: true }));
     const shouldSetAsDefaultForUsers = data.isActive !== false && (data.isDefault || !existingDefaultSystemKey);
     if (shouldSetAsDefaultForUsers) {
       await ApiKeyRepository.setSystemApiKeyDefaultForAllUsers(newKey._id);
+    } else {
+      await this.ensureUserHasDefaultApiKey(userId);
     }
     return maskApiKeyValue(decrypted);
   }
@@ -83,6 +124,7 @@ class ApiKeyService {
   }
 
   async deleteSystemApiKey(id) {
+    const affectedUsers = await ApiKeyRepository.findUsersByDefaultSystemKey(id);
     const result = await ApiKeyRepository.deleteSystemKey(id);
     if (!result) {
       const error = new Error('System API Key not found');
@@ -90,6 +132,7 @@ class ApiKeyService {
       throw error;
     }
     await ApiKeyRepository.clearSystemKeyFromAllUsers(id);
+    await Promise.all(affectedUsers.map(user => this.ensureUserHasDefaultApiKey(user._id || user.id)));
     return true;
   }
 
@@ -126,6 +169,8 @@ class ApiKeyService {
     console.log('New API Key created with ID:', newApiKey);
     if (apiKeyData.isDefault) {
       await this.markKeyAsDefault(userId, newApiKey._id);
+    } else {
+      await this.ensureUserHasDefaultApiKey(userId, editedUser);
     }
     return this.getUserApiKeyById(userId, newApiKey._id);
   }
@@ -143,6 +188,7 @@ class ApiKeyService {
       error.statusCode = 404;
       throw error;
     }
+    await this.ensureUserHasDefaultApiKey(userId);
     return isDeleted;
   }
 
@@ -245,6 +291,7 @@ class ApiKeyService {
         error.statusCode = 404;
         throw error;
       }
+      await this.ensureUserHasDefaultApiKey(userId, updatedUser);
       return this.getUserApiKeyById(userId, apiKeyId);
     }
 
@@ -254,6 +301,8 @@ class ApiKeyService {
       error.statusCode = 404;
       throw error;
     }
+
+    await this.ensureUserHasDefaultApiKey(userId, updatedUser);
 
     return this.getUserApiKeyById(userId, apiKeyId);
   }
@@ -268,6 +317,7 @@ class ApiKeyService {
         error.statusCode = 404;
         throw error;
       }
+      await this.ensureUserHasDefaultApiKey(userId, updatedUser);
       return this.getUserApiKeyById(userId, apiKeyId);
     }
 
@@ -277,6 +327,8 @@ class ApiKeyService {
       error.statusCode = 404;
       throw error;
     }
+
+    await this.ensureUserHasDefaultApiKey(userId, updatedUser);
 
     return this.getUserApiKeyById(userId, apiKeyId);
   }

@@ -1,0 +1,6 @@
+type: string
+enum:
+  - admin
+  - instructor
+  - advanced
+example: instructor

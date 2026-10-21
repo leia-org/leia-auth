@@ -1,0 +1,67 @@
+openapi: 3.0.3
+info:
+  title: LEIA Auth API
+  version: '1.0.0'
+  description: LEIA authentication and API key management service documentation
+servers:
+  - url: /api
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+    internTokenAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Internal service token
+
+security:
+  - bearerAuth: []
+  - ApiKeyAuth: []
+
+tags:
+  - name: Users v1
+    description: User authentication, profile, and administration endpoints
+  - name: API Keys v1
+    description: User, system, and internal API key endpoints
+
+paths:
+  # User v1 paths
+  /v1/users/login:
+    $ref: './paths/v1/users/login.yaml'
+  /v1/users/register:
+    $ref: './paths/v1/users/register.yaml'
+  /v1/users:
+    $ref: './paths/v1/users/index.yaml'
+  /v1/users/email/{email}:
+    $ref: './paths/v1/users/email-_email.yaml'
+  /v1/users/intern/{id}:
+    $ref: './paths/v1/users/intern-_id.yaml'
+  /v1/users/profile/update:
+    $ref: './paths/v1/users/profile-update.yaml'
+  /v1/users/profile/change-password:
+    $ref: './paths/v1/users/profile-change-password.yaml'
+  /v1/users/{id}:
+    $ref: './paths/v1/users/_id.yaml'
+
+  # API Key v1 paths
+  /v1/apikeys:
+    $ref: './paths/v1/apikeys/index.yaml'
+  /v1/apikeys/get-value:
+    $ref: './paths/v1/apikeys/get-value.yaml'
+  /v1/apikeys/validate-provider:
+    $ref: './paths/v1/apikeys/validate-provider.yaml'
+  /v1/apikeys/system:
+    $ref: './paths/v1/apikeys/system.yaml'
+  /v1/apikeys/system/{id}:
+    $ref: './paths/v1/apikeys/system-_id.yaml'
+  /v1/apikeys/manage-default/{apiKeyId}:
+    $ref: './paths/v1/apikeys/manage-default-_apiKeyId.yaml'
+  /v1/apikeys/{apiKeyId}:
+    $ref: './paths/v1/apikeys/_apiKeyId.yaml'

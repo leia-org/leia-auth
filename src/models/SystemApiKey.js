@@ -11,6 +11,10 @@ const SystemApiKeySchema = new Schema(
       type: String,
       required: true,
     },
+    model: {
+      type: String,
+      required: true,
+    },
     baseUrl: {
       type: String,
       required: function() {

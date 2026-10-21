@@ -1,0 +1,11 @@
+type: object
+properties:
+  message:
+    type: string
+    example: Duplicate key error
+  duplicateFields:
+    type: object
+    additionalProperties: true
+    example:
+      email: instructor@leia.local
+description: User duplicate key error response.

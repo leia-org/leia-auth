@@ -1,0 +1,92 @@
+parameters:
+  - in: path
+    name: id
+    required: true
+    schema:
+      $ref: '../../../components/schemas/mongoId.yaml'
+get:
+  tags:
+    - Users v1
+  summary: Get user by id
+  description: Returns a user by id. Requires admin access.
+  security:
+    - bearerAuth: []
+  responses:
+    '200':
+      description: User found.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/user/user.yaml'
+    '400':
+      description: Invalid user id.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: 'Invalid _id: user_id'
+            required:
+              - message
+    '403':
+      description: Admin access required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+    '404':
+      description: User not found.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/userNotFoundError.yaml'
+put:
+  tags:
+    - Users v1
+  summary: Update a user
+  description: Users can update themselves, but changing role or updating another user requires admin access.
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../../components/schemas/v1/user/updateUser.yaml'
+  responses:
+    '200':
+      description: User updated.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/user/user.yaml'
+    '400':
+      description: Validation error.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/user/validationError.yaml'
+    '403':
+      description: Admin access required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+delete:
+  tags:
+    - Users v1
+  summary: Delete a user
+  description: Deletes a user. Requires admin access.
+  security:
+    - bearerAuth: []
+  responses:
+    '204':
+      description: User deleted.
+    '403':
+      description: Admin access required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'

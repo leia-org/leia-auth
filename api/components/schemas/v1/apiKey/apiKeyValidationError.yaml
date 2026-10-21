@@ -1,0 +1,16 @@
+type: object
+properties:
+  message:
+    type: string
+    example: Validation Error
+  validationErrors:
+    type: object
+    additionalProperties:
+      type: string
+    example:
+      provider: 'Ese provider no lo gestionamos en el sistema.'
+      keyValue: 'OpenAI/Gemini has rejected the API key. Please verify that the key is correct and has the necessary permissions.'
+      baseUrl: 'La Base URL debe ser un enlace valido (ej: http://localhost:11434).'
+      isActive: '"isActive" is required'
+      isDefault: '"isDefault" is required'
+description: API key validation error response.

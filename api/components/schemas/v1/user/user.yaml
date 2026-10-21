@@ -1,0 +1,37 @@
+type: object
+properties:
+  id:
+    $ref: '../../mongoId.yaml'
+  email:
+    type: string
+    format: email
+    example: instructor@leia.local
+  role:
+    $ref: './role.yaml'
+  useSystemApiKey:
+    type: boolean
+    example: false
+  isSystemApiKeyDefault:
+    type: boolean
+    example: false
+  defaultSystemApiKeyId:
+    allOf:
+      - $ref: '../../mongoId.yaml'
+    nullable: true
+  apiKeys:
+    type: array
+    default: []
+    items:
+      $ref: '../apiKey/apiKey.yaml'
+  createdAt:
+    type: string
+    format: date-time
+  updatedAt:
+    type: string
+    format: date-time
+required:
+  - id
+  - email
+  - role
+  - useSystemApiKey
+description: User returned by the Auth service. Password and Mongo internal fields are omitted.

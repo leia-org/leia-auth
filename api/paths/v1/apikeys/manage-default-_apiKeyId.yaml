@@ -1,0 +1,60 @@
+parameters:
+  - in: path
+    name: apiKeyId
+    required: true
+    schema:
+      $ref: '../../../components/schemas/mongoId.yaml'
+put:
+  tags:
+    - API Keys v1
+  summary: Toggle default API key
+  description: Marks an API key as default or removes it as default for the authenticated user.
+  security:
+    - bearerAuth: []
+  responses:
+    '200':
+      description: API key default status changed.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/apiKey/apiKey.yaml'
+    '401':
+      description: Authentication required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+    '403':
+      description: API key management access required or system API key access denied.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+          examples:
+            apiKeyManagementAccessRequired:
+              summary: API key management access required
+              value:
+                message: 'Unauthorized: User API key management access required'
+            systemApiKeyAccessDenied:
+              summary: System API key access denied
+              value:
+                message: User does not have access to the system API keys
+    '404':
+      description: API key or user not found.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+          examples:
+            userNotFound:
+              summary: User not found
+              value:
+                message: User not found
+            apiKeyNotFound:
+              summary: API key not found
+              value:
+                message: API Key not found
+            apiKeyOwnershipNotFound:
+              summary: API key does not belong to this user
+              value:
+                message: API Key not found or does not belong to this user

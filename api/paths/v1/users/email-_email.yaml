@@ -1,0 +1,33 @@
+parameters:
+  - in: path
+    name: email
+    required: true
+    schema:
+      type: string
+      format: email
+get:
+  tags:
+    - Users v1
+  summary: Get user by email
+  description: Returns a user by email. Requires admin access.
+  security:
+    - bearerAuth: []
+  responses:
+    '200':
+      description: User found.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/user/user.yaml'
+    '403':
+      description: Admin access required.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'
+    '404':
+      description: User not found.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/userNotFoundError.yaml'

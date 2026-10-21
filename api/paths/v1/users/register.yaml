@@ -1,0 +1,31 @@
+post:
+  tags:
+    - Users v1
+  summary: Register an instructor user
+  description: Creates an instructor account with system API key access disabled.
+  security: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../../components/schemas/v1/user/register.yaml'
+  responses:
+    '201':
+      description: User created.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/user/user.yaml'
+    '400':
+      description: Validation error.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/user/validationError.yaml'
+    '409':
+      description: Email already exists.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/user/duplicateKeyError.yaml'

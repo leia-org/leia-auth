@@ -1,11 +1,13 @@
 import logger from '../utils/logger.js';
 import { verifyToken } from '../utils/jwt.js';
+import { readSessionCookie } from '../utils/sessionCookie.js';
 
 export function auth(req, res, next) {
   req.auth = null;
 
   const authorizationHeader = req.headers['authorization'];
   const apiKeyHeader = req.headers['x-api-key'];
+  const sessionToken = readSessionCookie(req);
 
   logger.debug('Authorization header found');
 
@@ -19,9 +21,15 @@ export function auth(req, res, next) {
       }
 
       const token = parts[1];
+      const payload = verifyToken(token);
+      if (payload.type && payload.type !== 'access') {
+        const error = new Error('Unauthorized: Access token required');
+        error.statusCode = 401;
+        return next(error);
+      }
       req.auth = {
         method: 'JWT',
-        payload: verifyToken(token),
+        payload,
       };
       return next();
     } else if (apiKeyHeader) {
@@ -36,6 +44,18 @@ export function auth(req, res, next) {
         error.statusCode = 401;
         return next(error);
       }
+    } else if (sessionToken) {
+      try {
+        const payload = verifyToken(sessionToken);
+        if (payload.type !== 'session') return next();
+        req.auth = {
+          method: 'SESSION',
+          payload,
+        };
+      } catch (error) {
+        logger.debug(`Ignoring invalid session cookie: ${error.message}`);
+      }
+      return next();
     }
   } catch (error) {
     logger.error('Error verifying token:', error);
@@ -96,6 +116,15 @@ export function requireAuthentication(req, res, next) {
 export function requireJwtAuthentication(req, res, next) {
   if (req.auth?.method !== 'JWT') {
     const error = new Error('Unauthorized: Login required');
+    error.statusCode = 401;
+    return next(error);
+  }
+  return next();
+}
+
+export function requireSessionAuthentication(req, res, next) {
+  if (req.auth?.method !== 'SESSION') {
+    const error = new Error('Unauthorized: Session required');
     error.statusCode = 401;
     return next(error);
   }

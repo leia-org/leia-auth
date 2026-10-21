@@ -48,6 +48,35 @@ describe('requireValidTurnstileToken', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
+  it('accepts the Swagger bypass token outside production', async () => {
+    vi.stubEnv('NODE_ENV', 'develop');
+    const req = {
+      body: { 'cf-turnstile-response': 'swagger-turnstile-token', email: 'test@example.com' },
+      headers: {},
+    };
+    const res = createResponse();
+    const next = vi.fn();
+
+    await requireValidTurnstileToken(req, res, next);
+
+    expect(axios.post).not.toHaveBeenCalled();
+    expect(req.body).toEqual({ email: 'test@example.com' });
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it('does not accept the Swagger bypass token in production', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const req = { body: { 'cf-turnstile-response': 'swagger-turnstile-token' }, headers: {} };
+    const res = createResponse();
+    const next = vi.fn();
+
+    await requireValidTurnstileToken(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(axios.post).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+  });
+
   it('continues after a valid token and removes it from the body', async () => {
     vi.stubEnv('CLOUDFLARE_SECRET_KEY', 'secret');
     axios.post.mockResolvedValue({ data: { success: true } });

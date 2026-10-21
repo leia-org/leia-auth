@@ -1,0 +1,31 @@
+post:
+  tags:
+    - Users v1
+  summary: Log in a user
+  description: Returns a JWT token for valid user credentials.
+  security: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../../components/schemas/v1/user/credentials.yaml'
+  responses:
+    '200':
+      description: Login successful.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/user/loginResponse.yaml'
+    '400':
+      description: Validation error.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/user/validationError.yaml'
+    '401':
+      description: Invalid email or password.
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/v1/common/error.yaml'

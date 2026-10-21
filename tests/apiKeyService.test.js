@@ -16,6 +16,7 @@ vi.mock('../src/repositories/v1/ApiKeyRepository.js', () => ({
     createSystemKey: vi.fn(),
     updateSystemKey: vi.fn(),
     deleteSystemKey: vi.fn(),
+    findUsersByDefaultSystemKey: vi.fn(),
     clearSystemKeyFromAllUsers: vi.fn(),
   },
 }));
@@ -38,7 +39,7 @@ import ApiKeyService from '../src/services/v1/ApiKeyService.js';
 // Construye un doble de subdocumento de API Key tal como lo expone Mongoose: con _id
 // accesible a nivel superior y el método toObject().
 function apiKeySubdoc(data) {
-  return { _id: data._id, toObject: () => ({ ...data }) };
+  return { ...data, toObject: () => ({ ...data }) };
 }
 
 // Doble de usuario con la colección embebida de claves y su método .id() de Mongoose.
@@ -56,12 +57,14 @@ beforeEach(() => {
   vi.restoreAllMocks();
   ApiKeyRepository.findDefaultSystemKey.mockResolvedValue(null);
   ApiKeyRepository.findAllSystemKeys.mockResolvedValue([]);
+  ApiKeyRepository.findUsersByDefaultSystemKey.mockResolvedValue([]);
   ApiKeyRepository.enableSystemApiKey.mockResolvedValue(null);
 });
 
 describe('createUserApiKey — alta de clave de usuario', () => {
-  test('cifra el valor antes de persistirlo y devuelve la clave enmascarada', async () => {
+  test('cifra el valor y convierte automáticamente la primera clave en predeterminada', async () => {
     ApiKeyRepository.addApiKey.mockResolvedValue({ apiKeys: [{ _id: 'k1' }] });
+    ApiKeyRepository.markApiKeyAsDefault.mockResolvedValue({ apiKeys: [{ _id: 'k1', isDefault: true }] });
     const masked = { _id: 'k1', provider: 'openai', keyValue: 'MASKED' };
     vi.spyOn(ApiKeyService, 'getUserApiKeyById').mockResolvedValue(masked);
 
@@ -76,7 +79,21 @@ describe('createUserApiKey — alta de clave de usuario', () => {
     // El valor pasa por encrypt() antes de llegar al repositorio (el cifrado real
     // y la ausencia de texto plano se prueban en crypto.test.js).
     expect(persisted.keyValue).toBe('ENC(sk-plaintext-secret)');
+    expect(ApiKeyRepository.markApiKeyAsDefault).toHaveBeenCalledWith('user1', 'k1');
     expect(result.keyValue).toBe('MASKED');
+  });
+
+  test('conserva la predeterminada existente al crear otra clave', async () => {
+    ApiKeyRepository.addApiKey.mockResolvedValue({
+      apiKeys: [{ _id: 'k1', isDefault: true }, { _id: 'k2' }],
+    });
+    vi.spyOn(ApiKeyService, 'getUserApiKeyById').mockResolvedValue({ _id: 'k2' });
+
+    await ApiKeyService.createUserApiKey('user1', {
+      provider: 'openai', keyValue: 'sk-second', isDefault: false,
+    });
+
+    expect(ApiKeyRepository.markApiKeyAsDefault).not.toHaveBeenCalled();
   });
 
   test('marca la clave como predeterminada cuando isDefault es true', async () => {
@@ -98,7 +115,7 @@ describe('getUserApiKeys — listado de claves', () => {
   test('devuelve las claves del usuario y activa system api keys por defecto', async () => {
     UserRepository.findById.mockResolvedValue({
       useSystemApiKey: false,
-      apiKeys: [apiKeySubdoc({ _id: 'k1', keyValue: 'cifrada' })],
+      apiKeys: [apiKeySubdoc({ _id: 'k1', keyValue: 'cifrada', isDefault: true })],
     });
 
     const result = await ApiKeyService.getUserApiKeys('user1');
@@ -115,6 +132,7 @@ describe('getUserApiKeys — listado de claves', () => {
       defaultSystemApiKeyId: 'sys1',
       apiKeys: [apiKeySubdoc({ _id: 'k1', keyValue: 'cifrada' })],
     });
+    ApiKeyRepository.findAllSystemKeys.mockResolvedValue([{ _id: 'sys1' }]);
     // getAllSystemApiKeys es lógica aparte; la aislamos con un spy.
     vi.spyOn(ApiKeyService, 'getAllSystemApiKeys').mockResolvedValue([{ _id: 'sys1', keyValue: 'MASKED' }]);
 
@@ -123,6 +141,18 @@ describe('getUserApiKeys — listado de claves', () => {
     expect(result).toHaveLength(2);
     expect(result[0]._id).toBe('sys1');
     expect(result[0].isDefault).toBe(true);
+  });
+
+  test('no modifica una cuenta antigua sin clave predeterminada durante el listado', async () => {
+    UserRepository.findById.mockResolvedValue(userDoc({
+      useSystemApiKey: false,
+      apiKeys: [apiKeySubdoc({ _id: 'old', keyValue: 'old-secret', createdAt: '2025-01-01' })],
+    }));
+
+    const result = await ApiKeyService.getUserApiKeys('user1');
+
+    expect(ApiKeyRepository.markApiKeyAsDefault).not.toHaveBeenCalled();
+    expect(result[0].isDefault).toBeUndefined();
   });
 
   test('rechaza con 404 si el usuario no existe', async () => {
@@ -182,8 +212,23 @@ describe('markKeyAsDefault — clave predeterminada', () => {
 describe('deleteUserApiKey — borrado de clave', () => {
   test('elimina la clave cuando el repositorio confirma el borrado', async () => {
     ApiKeyRepository.deleteApiKey.mockResolvedValue([true, 'API Key deleted successfully']);
+    UserRepository.findById.mockResolvedValue(userDoc());
 
     await expect(ApiKeyService.deleteUserApiKey('user1', 'k1')).resolves.toBe(true);
+  });
+
+  test('al borrar la predeterminada marca como tal la clave restante más antigua', async () => {
+    ApiKeyRepository.deleteApiKey.mockResolvedValue([true, 'API Key deleted successfully']);
+    const oldestRemaining = apiKeySubdoc({ _id: 'k2', createdAt: '2025-01-01' });
+    const newestRemaining = apiKeySubdoc({ _id: 'k3', createdAt: '2026-01-01' });
+    UserRepository.findById.mockResolvedValue(userDoc({ apiKeys: [newestRemaining, oldestRemaining] }));
+    ApiKeyRepository.markApiKeyAsDefault.mockResolvedValue(userDoc({
+      apiKeys: [{ ...oldestRemaining, isDefault: true }, newestRemaining],
+    }));
+
+    await ApiKeyService.deleteUserApiKey('user1', 'k1');
+
+    expect(ApiKeyRepository.markApiKeyAsDefault).toHaveBeenCalledWith('user1', 'k2');
   });
 
   test('rechaza con 404 si la clave no existe', async () => {
@@ -381,6 +426,26 @@ describe('Gestión de claves del sistema', () => {
     });
 
     expect(ApiKeyRepository.setSystemApiKeyDefaultForAllUsers).toHaveBeenCalledWith('sys1');
+  });
+
+  test('keeps the existing global default and repairs the creator default when adding another system key', async () => {
+    ApiKeyRepository.findDefaultSystemKey.mockResolvedValue({ _id: 'existing-system' });
+    ApiKeyRepository.createSystemKey.mockResolvedValue(apiKeySubdoc({ _id: 'new-system', keyValue: 'ENC(secret)' }));
+    UserRepository.findById.mockResolvedValue(userDoc({
+      useSystemApiKey: true,
+      apiKeys: [{ _id: 'personal-old', createdAt: '2025-01-01' }],
+    }));
+    ApiKeyRepository.findAllSystemKeys.mockResolvedValue([
+      { _id: 'existing-system', createdAt: '2025-02-01' },
+      { _id: 'new-system', createdAt: '2025-03-01' },
+    ]);
+
+    await ApiKeyService.createSystemApiKey('admin1', {
+      provider: 'openai', keyValue: 'secret', isActive: true, isDefault: false,
+    });
+
+    expect(ApiKeyRepository.setSystemApiKeyDefaultForAllUsers).not.toHaveBeenCalled();
+    expect(ApiKeyRepository.markApiKeyAsDefault).toHaveBeenCalledWith('admin1', 'personal-old');
   });
 
   test('updateSystemApiKey rechaza con 400 si se cambia el proveedor sin valor', async () => {

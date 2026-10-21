@@ -1,0 +1,13 @@
+type: object
+properties:
+  message:
+    type: string
+    example: Validation Error
+  validationErrors:
+    type: object
+    additionalProperties:
+      type: string
+    example:
+      email: '"email" must be a valid email'
+      password: '"password" is required'
+description: User validation error response.
