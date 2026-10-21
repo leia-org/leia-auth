@@ -59,6 +59,7 @@ it('issues an HttpOnly pre session, records actor and target and redirects witho
     body: new URLSearchParams({ accountId: id, returnTo: 'https://pre.designer.leia.ovh/', accessAssertion: 'valid' }) });
   expect(response.status).toBe(303); expect(response.headers.get('Location')).toBe('https://pre.designer.leia.ovh/');
   const cookie = response.headers.get('Set-Cookie'); expect(cookie).toContain('HttpOnly');
+  expect(cookie).toContain('__Host-leia_test_access=valid;');
   const token = cookie.match(/leia_session=([^;]+)/)[1];
   expect(verifyToken(token)).toMatchObject({ id, email: user.email, role: 'admin', type: 'session' });
   expect(audit.info).toHaveBeenCalledWith(expect.stringContaining('github-member'));

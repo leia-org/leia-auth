@@ -6,7 +6,7 @@ import { setSessionCookie } from '../utils/sessionCookie.js';
 import { accessCookie, testLoginEnabled, testLoginReturnUrl, verifyAccessIdentity } from '../utils/cloudflareAccess.js';
 
 const entryOrigin = 'https://test-login.leia.ovh';
-const capabilityCookie = '__Secure-leia_test_access';
+const capabilityCookie = '__Host-leia_test_access';
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char]));
 
 export function createTestLoginRouter({ verify = verifyAccessIdentity, users = User, audit = logger } = {}) {
