@@ -8,7 +8,10 @@ vi.mock('../src/repositories/v1/ApiKeyRepository.js', () => ({
     markApiKeyAsDefault: vi.fn(),
     unmarkApiKeyDefault: vi.fn(),
     setSystemApiKeyDefault: vi.fn(),
+    setSystemApiKeyDefaultForAllUsers: vi.fn(),
+    enableSystemApiKey: vi.fn(),
     findAllSystemKeys: vi.fn(),
+    findDefaultSystemKey: vi.fn(),
     findSystemKeyById: vi.fn(),
     createSystemKey: vi.fn(),
     updateSystemKey: vi.fn(),
@@ -52,8 +55,10 @@ function userDoc({ apiKeys = [], ...rest } = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.restoreAllMocks();
+  ApiKeyRepository.findDefaultSystemKey.mockResolvedValue(null);
   ApiKeyRepository.findAllSystemKeys.mockResolvedValue([]);
   ApiKeyRepository.findUsersByDefaultSystemKey.mockResolvedValue([]);
+  ApiKeyRepository.enableSystemApiKey.mockResolvedValue(null);
 });
 
 describe('createUserApiKey — alta de clave de usuario', () => {
@@ -107,7 +112,7 @@ describe('createUserApiKey — alta de clave de usuario', () => {
 });
 
 describe('getUserApiKeys — listado de claves', () => {
-  test('devuelve las claves del usuario enmascaradas', async () => {
+  test('devuelve las claves del usuario y activa system api keys por defecto', async () => {
     UserRepository.findById.mockResolvedValue({
       useSystemApiKey: false,
       apiKeys: [apiKeySubdoc({ _id: 'k1', keyValue: 'cifrada', isDefault: true })],
@@ -117,7 +122,8 @@ describe('getUserApiKeys — listado de claves', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].keyValue).toBe('MASKED');
-    expect(ApiKeyRepository.findAllSystemKeys).not.toHaveBeenCalled();
+    expect(ApiKeyRepository.findDefaultSystemKey).toHaveBeenCalled();
+    expect(ApiKeyRepository.findAllSystemKeys).toHaveBeenCalled();
   });
 
   test('antepone las claves del sistema cuando el usuario tiene permiso', async () => {
@@ -275,11 +281,14 @@ describe('createUserApiKey y getUserApiKeyById — ramas de error y de clave del
     expect(result.isDefault).toBe(true);
   });
 
-  test('getUserApiKeyById rechaza con 403 una clave del sistema sin permiso', async () => {
+  test('getUserApiKeyById habilita system keys para usuarios antiguos sin permiso explícito', async () => {
     ApiKeyRepository.findSystemKeyById.mockResolvedValue(apiKeySubdoc({ _id: 'sys1', keyValue: 'cif' }));
     UserRepository.findById.mockResolvedValue(userDoc({ useSystemApiKey: false }));
 
-    await expect(ApiKeyService.getUserApiKeyById('user1', 'sys1')).rejects.toMatchObject({ statusCode: 403 });
+    const result = await ApiKeyService.getUserApiKeyById('user1', 'sys1');
+
+    expect(result._id).toBe('sys1');
+    expect(result.isDefault).toBe(false);
   });
 
   test('getUserApiKeyById rechaza con 404 si la clave de usuario no existe', async () => {
@@ -393,7 +402,7 @@ describe('Gestión de claves del sistema', () => {
 
   test('createSystemApiKey cifra el valor y marca la predeterminada cuando isDefault es true', async () => {
     ApiKeyRepository.createSystemKey.mockResolvedValue(apiKeySubdoc({ _id: 'sys1', keyValue: 'ENC(sk-sys)' }));
-    ApiKeyRepository.setSystemApiKeyDefault.mockResolvedValue({});
+    ApiKeyRepository.setSystemApiKeyDefaultForAllUsers.mockResolvedValue({});
 
     const result = await ApiKeyService.createSystemApiKey('admin1', {
       provider: 'openai',
@@ -401,8 +410,42 @@ describe('Gestión de claves del sistema', () => {
       isDefault: true,
     });
 
-    expect(ApiKeyRepository.setSystemApiKeyDefault).toHaveBeenCalledWith('admin1', 'sys1');
+    expect(ApiKeyRepository.setSystemApiKeyDefaultForAllUsers).toHaveBeenCalledWith('sys1');
     expect(result.keyValue).toBe('MASKED');
+  });
+
+  test('createSystemApiKey marca la primera system key activa como predeterminada para todos', async () => {
+    ApiKeyRepository.createSystemKey.mockResolvedValue(apiKeySubdoc({ _id: 'sys1', keyValue: 'ENC(sk-sys)' }));
+    ApiKeyRepository.setSystemApiKeyDefaultForAllUsers.mockResolvedValue({});
+
+    await ApiKeyService.createSystemApiKey('admin1', {
+      provider: 'openai',
+      keyValue: 'sk-sys',
+      isActive: true,
+      isDefault: false,
+    });
+
+    expect(ApiKeyRepository.setSystemApiKeyDefaultForAllUsers).toHaveBeenCalledWith('sys1');
+  });
+
+  test('keeps the existing global default and repairs the creator default when adding another system key', async () => {
+    ApiKeyRepository.findDefaultSystemKey.mockResolvedValue({ _id: 'existing-system' });
+    ApiKeyRepository.createSystemKey.mockResolvedValue(apiKeySubdoc({ _id: 'new-system', keyValue: 'ENC(secret)' }));
+    UserRepository.findById.mockResolvedValue(userDoc({
+      useSystemApiKey: true,
+      apiKeys: [{ _id: 'personal-old', createdAt: '2025-01-01' }],
+    }));
+    ApiKeyRepository.findAllSystemKeys.mockResolvedValue([
+      { _id: 'existing-system', createdAt: '2025-02-01' },
+      { _id: 'new-system', createdAt: '2025-03-01' },
+    ]);
+
+    await ApiKeyService.createSystemApiKey('admin1', {
+      provider: 'openai', keyValue: 'secret', isActive: true, isDefault: false,
+    });
+
+    expect(ApiKeyRepository.setSystemApiKeyDefaultForAllUsers).not.toHaveBeenCalled();
+    expect(ApiKeyRepository.markApiKeyAsDefault).toHaveBeenCalledWith('admin1', 'personal-old');
   });
 
   test('updateSystemApiKey rechaza con 400 si se cambia el proveedor sin valor', async () => {

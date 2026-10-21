@@ -49,7 +49,7 @@ export const register = async (req, res, next) => {
       email: value.email,
       password: value.password,
       role: 'instructor',
-      useSystemApiKey: false,
+      useSystemApiKey: true,
     };
 
     const savedUser = await UserService.create(instructorToBeCreated);
