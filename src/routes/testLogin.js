@@ -12,7 +12,8 @@ const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({'&':'&am
 export function createTestLoginRouter({ verify = verifyAccessIdentity, users = User, audit = logger } = {}) {
   const router = express.Router();
   router.use((req, res, next) => {
-    res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
+    // Keep Origin on the cross-origin form POST without disclosing search/return parameters in Referer.
+    res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'strict-origin', 'X-Content-Type-Options': 'nosniff' });
     if (!testLoginEnabled() || req.hostname !== 'pre.auth.leia.ovh') return res.sendStatus(404);
     next();
   });

@@ -43,6 +43,7 @@ it('lists only projected account fields and escapes HTML', async () => {
   expect(find.mock.results[0].value.select).toHaveBeenCalledWith('_id email role');
   expect(html).toContain(user.email); expect(html).not.toContain('never-return');
   expect(response.headers.get('Cache-Control')).toBe('no-store');
+  expect(response.headers.get('Referrer-Policy')).toBe('strict-origin');
   expect(response.headers.get('Content-Security-Policy')).toContain("frame-ancestors 'none'");
 });
 it('requires the protected entry origin and a valid assertion before issuing a session', async () => {
