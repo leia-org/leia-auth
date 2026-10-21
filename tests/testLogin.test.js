@@ -43,6 +43,7 @@ it('lists only projected account fields and escapes HTML', async () => {
   expect(find.mock.results[0].value.select).toHaveBeenCalledWith('_id email role');
   expect(html).toContain(user.email); expect(html).not.toContain('never-return');
   expect(response.headers.get('Cache-Control')).toBe('no-store');
+  expect(response.headers.get('Referrer-Policy')).toBe('strict-origin');
   expect(response.headers.get('Content-Security-Policy')).toContain("frame-ancestors 'none'");
 });
 it('requires the protected entry origin and a valid assertion before issuing a session', async () => {
@@ -58,6 +59,7 @@ it('issues an HttpOnly pre session, records actor and target and redirects witho
     body: new URLSearchParams({ accountId: id, returnTo: 'https://pre.designer.leia.ovh/', accessAssertion: 'valid' }) });
   expect(response.status).toBe(303); expect(response.headers.get('Location')).toBe('https://pre.designer.leia.ovh/');
   const cookie = response.headers.get('Set-Cookie'); expect(cookie).toContain('HttpOnly');
+  expect(cookie).toContain('__Host-leia_test_access=valid;');
   const token = cookie.match(/leia_session=([^;]+)/)[1];
   expect(verifyToken(token)).toMatchObject({ id, email: user.email, role: 'admin', type: 'session' });
   expect(audit.info).toHaveBeenCalledWith(expect.stringContaining('github-member'));

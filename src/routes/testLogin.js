@@ -6,13 +6,14 @@ import { setSessionCookie } from '../utils/sessionCookie.js';
 import { accessCookie, testLoginEnabled, testLoginReturnUrl, verifyAccessIdentity } from '../utils/cloudflareAccess.js';
 
 const entryOrigin = 'https://test-login.leia.ovh';
-const capabilityCookie = '__Secure-leia_test_access';
+const capabilityCookie = '__Host-leia_test_access';
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char]));
 
 export function createTestLoginRouter({ verify = verifyAccessIdentity, users = User, audit = logger } = {}) {
   const router = express.Router();
   router.use((req, res, next) => {
-    res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
+    // Keep Origin on the cross-origin form POST without disclosing search/return parameters in Referer.
+    res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'strict-origin', 'X-Content-Type-Options': 'nosniff' });
     if (!testLoginEnabled() || req.hostname !== 'pre.auth.leia.ovh') return res.sendStatus(404);
     next();
   });
