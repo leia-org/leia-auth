@@ -52,6 +52,14 @@ it('forwards a verified assertion only in a protected form body, with a nonce sc
   const nonce = html.match(/<script nonce="([^"]+)"/)[1];
   expect(response.headers.get('Content-Security-Policy')).toContain(`script-src 'nonce-${nonce}'`);
   expect(response.headers.get('Content-Security-Policy')).toContain("frame-ancestors 'none'");
+  expect(response.headers.get('Content-Security-Policy')).toContain('form-action https://pre.auth.leia.ovh https://pre.designer.leia.ovh;');
+});
+it('allows the validated Workbench redirect destination without widening form destinations', async () => {
+  const response = await request('/test-login?returnTo=https%3A%2F%2Fpre-88.workbench.leia.ovh%2Fadministration', { headers: { 'Cf-Access-Jwt-Assertion': 'valid' } });
+  expect(response.status).toBe(200);
+  expect(response.headers.get('Content-Security-Policy')).toContain('form-action https://pre.auth.leia.ovh https://pre-88.workbench.leia.ovh;');
+  const invalid = await request('/test-login?returnTo=https%3A%2F%2Fevil.org%2F', { headers: { 'Cf-Access-Jwt-Assertion': 'valid' } });
+  expect(invalid.status).toBe(400);
 });
 it('rejects untrusted Origins and assertions before creating the Access capability', async () => {
   for (const [origin, assertion] of [['https://evil.org', 'valid'], ['https://test-login.leia.ovh', 'forged']]) {

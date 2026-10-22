@@ -32,7 +32,9 @@ export function createTestLoginRouter({ verify = verifyAccessIdentity, audit = l
     try {
       const returnTo = testLoginReturnUrl(req.query.returnTo || 'https://pre.designer.leia.ovh/');
       const nonce = randomBytes(18).toString('base64');
-      res.set('Content-Security-Policy', `default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'; form-action https://pre.auth.leia.ovh; frame-ancestors 'none'; base-uri 'none'`);
+      // Chromium also checks the final destination of a form's 303 redirect.
+      const frontendOrigin = new URL(returnTo).origin;
+      res.set('Content-Security-Policy', `default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'; form-action https://pre.auth.leia.ovh ${frontendOrigin}; frame-ancestors 'none'; base-uri 'none'`);
       res.type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LEIA pre access</title><style>body{margin:48px auto;padding:24px;max-width:480px;color:#17213b;font:16px system-ui,sans-serif}button{padding:12px 20px;border:0;border-radius:8px;background:#245cf5;color:white;font:inherit;cursor:pointer}</style></head><body><h1>Opening LEIA pre</h1><p>Your GitHub session has been verified. Continue to choose a test account in LEIA.</p><form id="access-login" method="post" action="https://pre.auth.leia.ovh/test-login"><input type="hidden" name="returnTo" value="${escapeHtml(returnTo)}"><input type="hidden" name="accessAssertion" value="${escapeHtml(req.get('Cf-Access-Jwt-Assertion'))}"><button type="submit">Continue to LEIA</button></form><script nonce="${nonce}">document.getElementById('access-login').requestSubmit();</script></body></html>`);
     } catch { res.sendStatus(400); }
   });
