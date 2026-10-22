@@ -10,7 +10,7 @@ import { auth } from './middlewares/auth.js';
 import userRoutesV1 from './routes/v1/userRoutes.js';
 import apiKeyRoutesV1 from './routes/v1/apiKeyRoutes.js';
 import SwaggerParser from 'swagger-parser';
-import { createTestLoginRouter, testLoginStatus } from './routes/testLogin.js';
+import { createTestLoginRouter, createTestAccountApi, testLoginStatus } from './routes/testLogin.js';
 
 
 const app = express();
@@ -51,6 +51,7 @@ SwaggerParser.bundle('./api/openapi.yaml')
 app.use('/api/v1/users', userRoutesV1);
 app.use('/api/v1/apikeys', apiKeyRoutesV1);
 app.get('/api/v1/test-login/status', testLoginStatus);
+app.use('/api/v1/test-login', createTestAccountApi());
 
 // Error handling middleware
 app.use(errorHandler);
