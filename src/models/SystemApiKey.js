@@ -18,7 +18,7 @@ const SystemApiKeySchema = new Schema(
     baseUrl: {
       type: String,
       required: function() {
-        return this.provider === 'ollama';
+        return ['ollama', 'alma'].includes(this.provider);
       }
     },
     keyValue: {
