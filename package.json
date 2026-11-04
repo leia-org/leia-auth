@@ -32,6 +32,7 @@
     "express": "^4.21.2",
     "helmet": "^8.1.0",
     "joi": "^18.1.2",
+    "jose": "^6.2.13",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.10.0",
     "swagger-parser": "^10.0.3",
