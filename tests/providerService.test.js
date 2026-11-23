@@ -93,6 +93,19 @@ describe('Verificación de claves de ALMA', () => {
     const [url, config] = axios.get.mock.calls[0];
     expect(url).toBe(`${baseUrl}/models`);
     expect(config.headers.apikey).toBe('clave-alma');
+    expect(config.maxRedirects).toBe(0);
+    expect(config.timeout).toBe(10000);
+  });
+
+  test.each([
+    'https://other.example.test/api/models/model/v1',
+    'http://alma.us.es/api/models/model/v1',
+    'https://alma.us.es/unrelated',
+  ])('rechaza destinos no admitidos antes de enviar la clave', async (url) => {
+    await expect(ProviderService.verifyApiKeyIntegrity('alma', 'clave-alma', url)).rejects.toThrow(
+      /HTTPS model URL on alma\.us\.es/
+    );
+    expect(axios.get).not.toHaveBeenCalled();
   });
 
   test.each([401, 403])('rechaza una clave inválida o sin acceso al modelo (%i de ALMA)', async (status) => {
