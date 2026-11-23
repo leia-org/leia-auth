@@ -81,3 +81,61 @@ describe('La verificación no consume tokens', () => {
     expect(url).toContain('/v1beta/models');
   });
 });
+
+describe('Verificación de claves de ALMA', () => {
+  const baseUrl = 'https://alma.us.es/api/models/llama-3.1-8b-instruct/v1';
+
+  test('valida la clave contra el listado de modelos de su Base URL, sin consumir cuota', async () => {
+    axios.get.mockResolvedValue({ status: 200, data: { data: [] } });
+
+    await expect(ProviderService.verifyApiKeyIntegrity('alma', 'clave-alma', `${baseUrl}/`)).resolves.toBe(true);
+
+    const [url, config] = axios.get.mock.calls[0];
+    expect(url).toBe(`${baseUrl}/models`);
+    expect(config.headers.apikey).toBe('clave-alma');
+    expect(config.maxRedirects).toBe(0);
+    expect(config.timeout).toBe(10000);
+  });
+
+  test.each([
+    'https://other.example.test/api/models/model/v1',
+    'http://alma.us.es/api/models/model/v1',
+    'https://alma.us.es/unrelated',
+  ])('rechaza destinos no admitidos antes de enviar la clave', async (url) => {
+    await expect(ProviderService.verifyApiKeyIntegrity('alma', 'clave-alma', url)).rejects.toThrow(
+      /HTTPS model URL on alma\.us\.es/
+    );
+    expect(axios.get).not.toHaveBeenCalled();
+  });
+
+  test.each([401, 403])('rechaza una clave inválida o sin acceso al modelo (%i de ALMA)', async (status) => {
+    axios.get.mockRejectedValue(httpError(status));
+
+    await expect(ProviderService.verifyApiKeyIntegrity('alma', 'clave-alma', baseUrl)).rejects.toThrow(
+      'ALMA has rejected the API key.'
+    );
+  });
+
+  test('distingue una Base URL que no existe en ALMA (404)', async () => {
+    axios.get.mockRejectedValue(httpError(404));
+
+    await expect(ProviderService.verifyApiKeyIntegrity('alma', 'clave-alma', baseUrl)).rejects.toThrow(
+      /ALMA Base URL not found/
+    );
+  });
+
+  test('distingue un fallo del servicio de ALMA de una clave inválida', async () => {
+    axios.get.mockRejectedValue(httpError(502));
+
+    await expect(ProviderService.verifyApiKeyIntegrity('alma', 'clave-alma', baseUrl)).rejects.toThrow(
+      /ALMA service is not available/
+    );
+  });
+
+  test('exige la Base URL sin llamar a la red', async () => {
+    await expect(ProviderService.verifyApiKeyIntegrity('alma', 'clave-alma')).rejects.toThrow(
+      'ALMA Base URL is required.'
+    );
+    expect(axios.get).not.toHaveBeenCalled();
+  });
+});

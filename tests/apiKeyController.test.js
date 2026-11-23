@@ -5,6 +5,8 @@ vi.mock('../src/services/v1/ApiKeyService.js', () => ({
     deleteUserApiKey: vi.fn(),
     updateUserApiKey: vi.fn(),
     getUserApiKeyById: vi.fn(),
+    createUserApiKey: vi.fn(),
+    getSystemApiKeyById: vi.fn(),
     updateSystemApiKey: vi.fn(),
     deleteSystemApiKey: vi.fn(),
     sendRevocationRequestToRunner: vi.fn(),
@@ -19,8 +21,10 @@ vi.mock('../src/validators/v1/apiKeyValidator.js', () => ({
 }));
 
 import ApiKeyService from '../src/services/v1/ApiKeyService.js';
-import { updateApiKeyValidator } from '../src/validators/v1/apiKeyValidator.js';
+import ProviderService from '../src/services/v1/ProviderService.js';
+import { createApiKeyValidator, updateApiKeyValidator } from '../src/validators/v1/apiKeyValidator.js';
 import {
+  createApiKey,
   updateApiKey,
   deleteApiKey,
   updateSystemApiKey,
@@ -98,5 +102,64 @@ describe('apiKeyController — la edición/eliminación de una clave notifica la
     expect(ApiKeyService.sendRevocationRequestToRunner).toHaveBeenCalledWith('sys1');
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(204);
+  });
+});
+
+describe('apiKeyController — ALMA se verifica contra la Base URL de la clave', () => {
+  const baseUrl = 'https://alma.us.es/api/models/llama-3.1-8b-instruct/v1';
+
+  test('createApiKey verifica la clave con su Base URL', async () => {
+    const value = { provider: 'alma', keyValue: 'clave-alma', baseUrl };
+    const req = { auth: { payload: { id: 'user1' } }, body: value };
+    const res = mockRes();
+    const next = vi.fn();
+    createApiKeyValidator.validateAsync.mockResolvedValue(value);
+    ApiKeyService.createUserApiKey.mockResolvedValue({ _id: 'k1' });
+
+    await createApiKey(req, res, next);
+
+    expect(ProviderService.verifyApiKeyIntegrity).toHaveBeenCalledWith('alma', 'clave-alma', baseUrl);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  test('updateApiKey verifica una clave nueva con la Base URL ya guardada', async () => {
+    const req = { auth: { payload: { id: 'user1' } }, params: { apiKeyId: 'k1' }, body: {} };
+    const res = mockRes();
+    const next = vi.fn();
+    updateApiKeyValidator.validateAsync.mockResolvedValue({ provider: 'alma', keyValue: 'clave-nueva' });
+    ApiKeyService.getUserApiKeyById.mockResolvedValue({ _id: 'k1', provider: 'alma', baseUrl });
+    ApiKeyService.updateUserApiKey.mockResolvedValue({ _id: 'k1' });
+
+    await updateApiKey(req, res, next);
+
+    expect(ProviderService.verifyApiKeyIntegrity).toHaveBeenCalledWith('alma', 'clave-nueva', baseUrl);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  test('updateSystemApiKey verifica una clave nueva de ALMA con la Base URL ya guardada', async () => {
+    const req = { params: { id: 'sys1' }, body: {} };
+    const res = mockRes();
+    const next = vi.fn();
+    updateApiKeyValidator.validateAsync.mockResolvedValue({ provider: 'alma', keyValue: 'clave-nueva' });
+    ApiKeyService.getSystemApiKeyById.mockResolvedValue({ _id: 'sys1', provider: 'alma', baseUrl });
+    ApiKeyService.updateSystemApiKey.mockResolvedValue({ _id: 'sys1' });
+
+    await updateSystemApiKey(req, res, next);
+
+    expect(ProviderService.verifyApiKeyIntegrity).toHaveBeenCalledWith('alma', 'clave-nueva', baseUrl);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  test('un error de Base URL se asocia al campo baseUrl', async () => {
+    const value = { provider: 'alma', keyValue: 'clave-alma', baseUrl };
+    const req = { auth: { payload: { id: 'user1' } }, body: value };
+    const next = vi.fn();
+    createApiKeyValidator.validateAsync.mockResolvedValue(value);
+    ProviderService.verifyApiKeyIntegrity.mockRejectedValueOnce(new Error('ALMA Base URL not found.'));
+
+    await createApiKey(req, mockRes(), next);
+
+    const [err] = next.mock.calls[0];
+    expect(err.details).toEqual([{ path: ['baseUrl'], message: 'ALMA Base URL not found.' }]);
   });
 });
