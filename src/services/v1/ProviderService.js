@@ -50,11 +50,17 @@ class ProviderService {
         if (!baseUrl) {
             throw new Error('ALMA Base URL is required.');
         }
+        const url = URL.canParse(baseUrl) ? new URL(baseUrl) : null;
+        if (!url || url.origin !== 'https://alma.us.es' || url.username || url.password ||
+            url.search || url.hash || !/^\/api\/models\/[\w.~-]+\/v1\/?$/.test(url.pathname)) {
+            throw new Error('ALMA Base URL must be an HTTPS model URL on alma.us.es.');
+        }
+        const modelPath = url.pathname.replace(/\/$/, '');
         try {
-            await axios.get(`${baseUrl.replace(/\/+$/, '')}/models`, {
-                headers: {
-                    apikey: keyValue
-                }
+            await axios.get(`${url.origin}${modelPath}/models`, {
+                headers: { apikey: keyValue },
+                maxRedirects: 0,
+                timeout: 10000,
             });
             return true;
         } catch (error) {
